@@ -49,7 +49,7 @@ export type FontOption =
 export interface DeviceConfig {
   model: DeviceModel
   angle: AnglePreset
-  verticalPosition: number // percentage from top (20-60)
+  verticalPosition: number // percentage from top (0-80)
 }
 
 export type DeviceModel = 'iphone-16-pro-max' | 'iphone-16-pro' | 'iphone-15-pro-max'

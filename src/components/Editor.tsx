@@ -548,8 +548,8 @@ export default function Editor() {
                 </div>
                 <input
                   type="range"
-                  min="20"
-                  max="50"
+                  min="0"
+                  max="80"
                   value={currentSlide.device.verticalPosition ?? 35}
                   onChange={(e) => handleDeviceChange({ verticalPosition: Number(e.target.value) })}
                   className="w-full accent-gray-900"
