@@ -1,5 +1,5 @@
-import { get, set, del, clear } from 'idb-keyval'
-import type { Project, Slide } from '../types'
+import { get, set, del } from 'idb-keyval'
+import type { Project } from '../types'
 
 const PROJECTS_KEY = 'ios-screenshot-projects'
 const CURRENT_PROJECT_KEY = 'ios-screenshot-current-project'

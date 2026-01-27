@@ -7,8 +7,6 @@ interface SlideCardProps {
   isSelected: boolean
   onSelect: () => void
   onDelete: () => void
-  onTextChange?: (text: Partial<Slide['text']>) => void
-  onTextDrag?: (verticalPosition: number) => void
 }
 
 export default function SlideCard({
@@ -16,14 +14,8 @@ export default function SlideCard({
   isSelected,
   onSelect,
   onDelete,
-  onTextChange,
-  onTextDrag,
 }: SlideCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
-
-  // Only allow text editing if this slide is selected
-  const handleTextChange = isSelected && onTextChange ? onTextChange : () => {}
-  const handleTextDrag = isSelected && onTextDrag ? onTextDrag : () => {}
 
   return (
     <div
@@ -35,11 +27,7 @@ export default function SlideCard({
       onClick={onSelect}
     >
       <div className="bg-white rounded-lg shadow-sm">
-        <Canvas
-          slide={slide}
-          onTextChange={handleTextChange}
-          onTextDrag={handleTextDrag}
-        />
+        <Canvas slide={slide} />
       </div>
       
       {/* Delete button */}

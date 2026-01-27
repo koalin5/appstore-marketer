@@ -10,18 +10,19 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@zumer/snapdom": "^2.0.2",
+    "file-saver": "^2.0.5",
+    "html2canvas": "^1.4.1",
     "idb-keyval": "^6.2.1",
     "jszip": "^3.10.1",
-    "file-saver": "^2.0.5",
-    "html2canvas": "^1.4.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
     "@types/file-saver": "^2.0.7",
     "@types/html2canvas": "^1.0.0",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",

@@ -110,11 +110,7 @@ export default function DeviceMockup({
                 #3a3a3c 100%
               )
             `,
-            boxShadow: `
-              ${shadow},
-              inset 0 1px 1px rgba(255,255,255,0.15),
-              inset 0 -1px 1px rgba(0,0,0,0.3)
-            `,
+            boxShadow: `${shadow}, inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(0,0,0,0.3)`,
           }}
         >
           {/* Side buttons - left side */}

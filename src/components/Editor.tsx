@@ -7,27 +7,23 @@ import ExportPanel from './ExportPanel'
 import {
   createNewProject,
   saveProject,
-  getProjects,
   getCurrentProjectId,
-  setCurrentProjectId,
   getProject,
   saveScreenshot,
   getScreenshot,
 } from '../utils/storage'
+import { captureSlideAsPNG, captureSlideAsBlob, exportBlobsAsZIP } from '../utils/export'
 import { DEVICE_MODELS } from '../presets/colors'
 
 export default function Editor() {
   const [project, setProject] = useState<Project | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
-  const [projects, setProjects] = useState<Project[]>([])
+  const [isExporting, setIsExporting] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     async function loadInitialProject() {
-      const projectsList = await getProjects()
-      setProjects(projectsList)
-
       const currentId = await getCurrentProjectId()
       if (currentId) {
         const loaded = await getProject(currentId)
@@ -53,7 +49,6 @@ export default function Editor() {
     saveTimeoutRef.current = setTimeout(async () => {
       updatedProject.updatedAt = Date.now()
       await saveProject(updatedProject)
-      setProjects(await getProjects())
     }, 500)
   }, [])
 
@@ -204,6 +199,44 @@ export default function Editor() {
     [project, currentSlideIndex, autoSave]
   )
 
+  // Export: capture visible canvas elements directly via snapdom
+  const handleExportSingle = useCallback(async () => {
+    const containers = containerRef.current?.querySelectorAll('[data-canvas-container]')
+    const el = containers?.[currentSlideIndex] as HTMLElement | null
+    if (!el) return
+
+    setIsExporting(true)
+    try {
+      await captureSlideAsPNG(el, `screenshot-${currentSlideIndex + 1}.png`)
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Export failed. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }, [currentSlideIndex])
+
+  const handleExportAll = useCallback(async () => {
+    if (!project) return
+    const containers = containerRef.current?.querySelectorAll('[data-canvas-container]')
+    if (!containers || containers.length === 0) return
+
+    setIsExporting(true)
+    try {
+      const blobs: Blob[] = []
+      for (let i = 0; i < containers.length; i++) {
+        const blob = await captureSlideAsBlob(containers[i] as HTMLElement)
+        blobs.push(blob)
+      }
+      await exportBlobsAsZIP(blobs)
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Export failed. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }, [project])
+
   if (!project) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -241,8 +274,10 @@ export default function Editor() {
               {project.slides.length} screenshot{project.slides.length !== 1 ? 's' : ''} • 1290 × 2796px
             </span>
             <ExportPanel
-              slides={project.slides}
-              currentSlideIndex={currentSlideIndex}
+              slideCount={project.slides.length}
+              isExporting={isExporting}
+              onExportCurrent={handleExportSingle}
+              onExportAll={handleExportAll}
             />
           </div>
         </div>
@@ -533,6 +568,7 @@ export default function Editor() {
           </div>
         </div>
       </div>
+
     </div>
   )
 }

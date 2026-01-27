@@ -94,7 +94,7 @@ function solveLinearSystem(A: number[][], b: number[]): number[] {
  * Returns the CSS transform string
  */
 export function getAngleTransform(
-  angle: AnglePreset,
+  _angle: AnglePreset,
   screenBounds: { corners: [number, number][]; width: number; height: number }
 ): string {
   const { corners, width, height } = screenBounds

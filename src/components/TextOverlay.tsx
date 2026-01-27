@@ -5,22 +5,18 @@ import { FONT_OPTIONS } from '../presets/colors'
 interface TextOverlayProps {
   text: TextConfig
   width: number
-  height: number
-  onTextChange: (text: Partial<TextConfig>) => void
   onTextDrag: (verticalPosition: number) => void
 }
 
 export default function TextOverlay({
   text,
   width,
-  height,
-  onTextChange,
   onTextDrag,
 }: TextOverlayProps) {
   const [isDragging, setIsDragging] = useState(false)
   const textRef = useRef<HTMLDivElement>(null)
 
-  const fontSize = text.size === 'small' ? 48 : text.size === 'medium' ? 64 : 80
+  const fontSize = text.size <= 60 ? 48 : text.size <= 80 ? 64 : 80
   const fontFamily = FONT_OPTIONS.find((f) => f.id === text.font)?.family || FONT_OPTIONS[1].family
   const textColor = text.color === 'white' ? '#FFFFFF' : text.color === 'black' ? '#000000' : '#000000'
 
@@ -38,8 +34,6 @@ export default function TextOverlay({
       if (!container) return
 
       const rect = container.getBoundingClientRect()
-      const scale = 0.25 // Match the display scale
-      const fullHeight = rect.height / scale
       const relativeY = (e.clientY - rect.top) / rect.height
       const yPercent = relativeY * 100
 

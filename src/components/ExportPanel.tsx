@@ -1,43 +1,28 @@
 import { useState } from 'react'
-import type { Slide } from '../types'
-import { exportSlideAsPNG, exportAllSlidesAsZIP } from '../utils/export'
 
 interface ExportPanelProps {
-  slides: Slide[]
-  currentSlideIndex: number
+  slideCount: number
+  isExporting: boolean
+  onExportCurrent: () => void
+  onExportAll: () => void
 }
 
 export default function ExportPanel({
-  slides,
-  currentSlideIndex,
+  slideCount,
+  isExporting,
+  onExportCurrent,
+  onExportAll,
 }: ExportPanelProps) {
-  const [isExporting, setIsExporting] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
-  const handleExportCurrent = async () => {
-    setIsExporting(true)
+  const handleExportCurrent = () => {
     setShowMenu(false)
-    try {
-      await exportSlideAsPNG(slides[currentSlideIndex], currentSlideIndex)
-    } catch (error) {
-      console.error('Export failed:', error)
-      alert('Export failed. Please try again.')
-    } finally {
-      setIsExporting(false)
-    }
+    onExportCurrent()
   }
 
-  const handleExportAll = async () => {
-    setIsExporting(true)
+  const handleExportAll = () => {
     setShowMenu(false)
-    try {
-      await exportAllSlidesAsZIP(slides)
-    } catch (error) {
-      console.error('Batch export failed:', error)
-      alert('Batch export failed. Please try again.')
-    } finally {
-      setIsExporting(false)
-    }
+    onExportAll()
   }
 
   return (
@@ -50,15 +35,15 @@ export default function ExportPanel({
         <span>⬇</span>
         {isExporting ? 'Exporting...' : 'Export'}
       </button>
-      
+
       {showMenu && !isExporting && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setShowMenu(false)}
           />
-          
+
           {/* Dropdown menu */}
           <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
             <button
@@ -73,7 +58,7 @@ export default function ExportPanel({
               className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 border-t border-gray-100"
             >
               <span>📦</span>
-              Export All ({slides.length})
+              Export All ({slideCount})
             </button>
           </div>
         </>
