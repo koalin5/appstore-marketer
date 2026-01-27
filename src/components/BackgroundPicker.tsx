@@ -80,14 +80,11 @@ export default function BackgroundPicker({
     <div className="space-y-4">
       {/* Header with Apply to All */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🎨</span>
-          <h3 className="font-semibold text-gray-900">Background</h3>
-        </div>
+        <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Background</h3>
         {onApplyToAll && (
           <button
             onClick={onApplyToAll}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-xs text-gray-500 hover:text-gray-900 font-medium transition-colors"
           >
             Apply to all
           </button>

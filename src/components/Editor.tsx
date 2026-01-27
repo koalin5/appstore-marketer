@@ -287,12 +287,6 @@ export default function Editor() {
       <div className="bg-white border-b border-gray-200 px-6 py-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <button
-            onClick={handleSlideAdd}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-          >
-            <span>+</span> Add
-          </button>
-          <button
             onClick={() => handleSlideDuplicate(currentSlideIndex)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
           >
@@ -365,116 +359,13 @@ export default function Editor() {
         </div>
 
         {/* Right panel - controls */}
-        <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0">
-          <div className="p-6 space-y-6">
-            
-            {/* Text Controls */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-base">✏️</span>
-                <h3 className="font-semibold text-gray-900">Text</h3>
-              </div>
-              
-              <div>
-                <input
-                  type="text"
-                  value={currentSlide.text.content}
-                  onChange={(e) => handleTextChange({ content: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all"
-                  placeholder="Your headline here"
-                />
-              </div>
+        <div className="w-96 bg-gray-50/80 border-l border-gray-200 overflow-y-auto flex-shrink-0">
+          <div className="flex flex-col gap-2 p-3">
 
-              <FontPicker
-                font={currentSlide.text.font}
-                onChange={(font) => handleTextChange({ font })}
-              />
+            {/* ── Screenshot ── */}
+            <div className="bg-white rounded-xl p-4">
+              <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Screenshot</h3>
 
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600 font-medium">Text Size</span>
-                  <span className="text-gray-400">{textSize}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="48"
-                  max="200"
-                  value={textSize}
-                  onChange={(e) => handleTextChange({ size: Number(e.target.value) })}
-                  className="w-full accent-gray-900"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600 font-medium">Vertical Position</span>
-                  <span className="text-gray-400">{currentSlide.text.verticalPosition}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="90"
-                  value={currentSlide.text.verticalPosition}
-                  onChange={(e) => handleTextChange({ verticalPosition: Number(e.target.value) })}
-                  className="w-full accent-gray-900"
-                />
-              </div>
-
-              <div>
-                <span className="block text-sm text-gray-600 font-medium mb-2">Text Color</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleTextChange({ color: 'black' })}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      currentSlide.text.color === 'black'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Dark
-                  </button>
-                  <button
-                    onClick={() => handleTextChange({ color: 'white' })}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      currentSlide.text.color === 'white'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Light
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="block text-sm text-gray-600 font-medium mb-2">Alignment</span>
-                <div className="flex gap-2">
-                  {(['left', 'center', 'right'] as const).map((align) => (
-                    <button
-                      key={align}
-                      onClick={() => handleTextChange({ align })}
-                      className={`flex-1 py-2.5 rounded-xl text-sm transition-all ${
-                        currentSlide.text.align === align
-                          ? 'bg-gray-900 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {align === 'left' ? '⬅' : align === 'center' ? '⬌' : '➡'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-gray-100" />
-
-            {/* Screenshot Upload - Second after Text */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🖼</span>
-                <h3 className="font-semibold text-gray-900">Screenshot</h3>
-              </div>
-              
               <div
                 onDrop={(e) => {
                   e.preventDefault()
@@ -485,10 +376,10 @@ export default function Editor() {
                 }}
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => document.getElementById('screenshot-input')?.click()}
-                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-                  currentSlide.screenshotRef 
-                    ? 'border-green-300 bg-green-50' 
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                className={`group relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                  currentSlide.screenshotRef
+                    ? 'border-gray-300 bg-gray-50/60 hover:bg-gray-100/60'
+                    : 'border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50/50'
                 }`}
               >
                 <input
@@ -502,49 +393,188 @@ export default function Editor() {
                   }}
                 />
                 {currentSlide.screenshotRef ? (
-                  <div className="text-green-600 font-medium">✓ Screenshot uploaded</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="6" stroke="#9ca3af" strokeWidth="1.5"/>
+                      <path d="M5.5 8L7 9.5L10.5 6" stroke="#9ca3af" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-500">Screenshot added</span>
+                    <span className="text-xs text-gray-400 ml-1">tap to replace</span>
+                  </div>
                 ) : (
-                  <div className="text-gray-500">Drop screenshot here</div>
+                  <div>
+                    <div className="text-gray-400 mb-1">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto">
+                        <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div className="text-sm text-gray-500 font-medium">Drop image or click to upload</div>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="h-px bg-gray-100" />
+            {/* ── Background ── */}
+            <div className="bg-white rounded-xl p-4">
+              <BackgroundPicker
+                background={currentSlide.background}
+                onChange={handleBackgroundChange}
+                onApplyToAll={handleApplyBackgroundToAll}
+              />
+            </div>
 
-            {/* Phone Angle */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-base">📱</span>
-                <h3 className="font-semibold text-gray-900">Phone Angle</h3>
+            {/* ── Text ── */}
+            <div className="bg-white rounded-xl p-4 space-y-4">
+              <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Text</h3>
+
+              <input
+                type="text"
+                value={currentSlide.text.content}
+                onChange={(e) => handleTextChange({ content: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                placeholder="Your headline here"
+              />
+
+              <FontPicker
+                font={currentSlide.text.font}
+                onChange={(font) => handleTextChange({ font })}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-gray-500 font-medium">Size</span>
+                    <span className="text-gray-400 tabular-nums">{textSize}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="48"
+                    max="200"
+                    value={textSize}
+                    onChange={(e) => handleTextChange({ size: Number(e.target.value) })}
+                    className="w-full accent-gray-900"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-gray-500 font-medium">Position</span>
+                    <span className="text-gray-400 tabular-nums">{currentSlide.text.verticalPosition}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="90"
+                    value={currentSlide.text.verticalPosition}
+                    onChange={(e) => handleTextChange({ verticalPosition: Number(e.target.value) })}
+                    className="w-full accent-gray-900"
+                  />
+                </div>
               </div>
-              
-              <div className="grid grid-cols-5 gap-2">
-                {([
-                  { id: 'straight', label: '|' },
-                  { id: 'slight-left', label: '/' },
-                  { id: 'slight-right', label: '\\' },
-                  { id: 'dramatic-left', label: '//' },
-                  { id: 'dramatic-right', label: '\\\\' },
-                ] as const).map((angle) => (
-                  <button
-                    key={angle.id}
-                    onClick={() => handleDeviceChange({ angle: angle.id })}
-                    className={`py-3 rounded-xl text-lg font-mono transition-all ${
-                      currentSlide.device.angle === angle.id
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title={angle.id.replace(/-/g, ' ')}
-                  >
-                    {angle.label}
-                  </button>
-                ))}
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <span className="block text-xs text-gray-500 font-medium mb-1.5">Color</span>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleTextChange({ color: 'black' })}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        currentSlide.text.color === 'black'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      Dark
+                    </button>
+                    <button
+                      onClick={() => handleTextChange({ color: 'white' })}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        currentSlide.text.color === 'white'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      Light
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <span className="block text-xs text-gray-500 font-medium mb-1.5">Align</span>
+                  <div className="flex gap-1.5">
+                    {(['left', 'center', 'right'] as const).map((align) => (
+                      <button
+                        key={align}
+                        onClick={() => handleTextChange({ align })}
+                        className={`flex-1 py-2 rounded-lg text-xs transition-all flex items-center justify-center ${
+                          currentSlide.text.align === align
+                            ? 'bg-gray-900 text-white shadow-sm'
+                            : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
+                        }`}
+                        title={align}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                          {align === 'left' && (
+                            <>
+                              <path d="M2 3h12M2 6.5h8M2 10h10M2 13.5h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                            </>
+                          )}
+                          {align === 'center' && (
+                            <>
+                              <path d="M2 3h12M4 6.5h8M3 10h10M5 13.5h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                            </>
+                          )}
+                          {align === 'right' && (
+                            <>
+                              <path d="M2 3h12M6 6.5h8M4 10h10M8 13.5h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                            </>
+                          )}
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Device ── */}
+            <div className="bg-white rounded-xl p-4 space-y-4">
+              <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Device</h3>
+
+              <div>
+                <span className="block text-xs text-gray-500 font-medium mb-2">Angle</span>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {([
+                    { id: 'straight', transform: 'none' },
+                    { id: 'slight-left', transform: 'perspective(50px) rotateY(22deg)' },
+                    { id: 'slight-right', transform: 'perspective(50px) rotateY(-22deg)' },
+                    { id: 'dramatic-left', transform: 'perspective(32px) rotateY(38deg)' },
+                    { id: 'dramatic-right', transform: 'perspective(32px) rotateY(-38deg)' },
+                  ] as const).map((angle) => (
+                    <button
+                      key={angle.id}
+                      onClick={() => handleDeviceChange({ angle: angle.id })}
+                      className={`py-2.5 rounded-lg flex items-center justify-center transition-all ${
+                        currentSlide.device.angle === angle.id
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                      title={angle.id.replace(/-/g, ' ')}
+                    >
+                      <div style={{ transform: angle.transform, transformStyle: 'preserve-3d' }}>
+                        <svg width="16" height="28" viewBox="0 0 16 28" fill="none">
+                          <rect x="1" y="1" width="14" height="26" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                          <rect x="2.5" y="2.5" width="11" height="23" rx="1.5" fill="currentColor" opacity="0.12" />
+                          <rect x="5.5" y="2" width="5" height="1.2" rx="0.6" fill="currentColor" opacity="0.35" />
+                        </svg>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600 font-medium">Vertical Position</span>
-                  <span className="text-gray-400">{currentSlide.device.verticalPosition ?? 35}%</span>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-gray-500 font-medium">Vertical Position</span>
+                  <span className="text-gray-400 tabular-nums">{currentSlide.device.verticalPosition ?? 35}%</span>
                 </div>
                 <input
                   type="range"
@@ -557,14 +587,6 @@ export default function Editor() {
               </div>
             </div>
 
-            <div className="h-px bg-gray-100" />
-
-            {/* Background */}
-            <BackgroundPicker
-              background={currentSlide.background}
-              onChange={handleBackgroundChange}
-              onApplyToAll={handleApplyBackgroundToAll}
-            />
           </div>
         </div>
       </div>
