@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import type { Slide } from '../types'
 import { FONT_OPTIONS } from '../presets/colors'
+import { DEVICE_SPECS } from '../presets/deviceSpecs'
 import { getBackgroundImage } from '../utils/storage'
 import DeviceMockup from './DeviceMockup'
 
@@ -59,10 +60,10 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
   const fontFamily = FONT_OPTIONS.find((f) => f.id === slide.text.font)?.family || 'Inter, sans-serif'
   const textColor = slide.text.color === 'white' ? '#FFFFFF' : '#000000'
 
-  // Device mockup sizing - the mockup is rendered at a fixed visual size
-  // regardless of which device model is selected
+  // Device mockup sizing — use frame image aspect ratio
+  const deviceSpec = DEVICE_SPECS[slide.device.model]
   const deviceDisplayWidth = displayWidth * 0.55  // Phone takes 55% of canvas width
-  const deviceDisplayHeight = deviceDisplayWidth * 2.17 // iPhone aspect ratio ~1:2.17
+  const deviceDisplayHeight = deviceDisplayWidth * (deviceSpec.frameHeight / deviceSpec.frameWidth)
   const deviceLeft = (displayWidth - deviceDisplayWidth) / 2
 
   // Device vertical position - default to 35% if not set

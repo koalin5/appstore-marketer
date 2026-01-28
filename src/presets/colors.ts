@@ -48,9 +48,10 @@ export const DEVICE_MODELS: Array<{
   name: string
   dimensions: { width: number; height: number }
 }> = [
-  { id: 'iphone-16-pro-max', name: 'iPhone 16 Pro Max', dimensions: { width: 1290, height: 2796 } },
-  { id: 'iphone-16-pro', name: 'iPhone 16 Pro', dimensions: { width: 1179, height: 2556 } },
-  { id: 'iphone-15-pro-max', name: 'iPhone 15 Pro Max', dimensions: { width: 1290, height: 2796 } },
+  { id: 'iphone-17-pro-max', name: 'iPhone 17 Pro Max', dimensions: { width: 1320, height: 2868 } },
+  { id: 'iphone-17-pro', name: 'iPhone 17 Pro', dimensions: { width: 1206, height: 2622 } },
+  { id: 'iphone-16-pro-max', name: 'iPhone 16 Pro Max', dimensions: { width: 1320, height: 2868 } },
+  { id: 'iphone-16-pro', name: 'iPhone 16 Pro', dimensions: { width: 1206, height: 2622 } },
 ]
 
-export type DeviceModel = 'iphone-16-pro-max' | 'iphone-16-pro' | 'iphone-15-pro-max'
+export type DeviceModel = 'iphone-17-pro-max' | 'iphone-17-pro' | 'iphone-16-pro-max' | 'iphone-16-pro'

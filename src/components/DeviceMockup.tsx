@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { DeviceConfig, AnglePreset } from '../types'
 import { getScreenshot } from '../utils/storage'
+import { DEVICE_SPECS } from '../presets/deviceSpecs'
 
 interface DeviceMockupProps {
   device: DeviceConfig
@@ -9,7 +10,6 @@ interface DeviceMockupProps {
   height: number
 }
 
-// Get CSS transform and shadow for different angles
 function getAngleTransform(angle: AnglePreset): { transform: string; shadow: string } {
   switch (angle) {
     case 'slight-left':
@@ -50,7 +50,7 @@ export default function DeviceMockup({
 
   useEffect(() => {
     let url: string | null = null
-    
+
     async function loadScreenshot() {
       if (!screenshotRef) {
         setScreenshotUrl(null)
@@ -65,7 +65,7 @@ export default function DeviceMockup({
     }
 
     loadScreenshot()
-    
+
     return () => {
       if (url) {
         URL.revokeObjectURL(url)
@@ -73,109 +73,47 @@ export default function DeviceMockup({
     }
   }, [screenshotRef])
 
+  const spec = DEVICE_SPECS[device.model]
   const { transform, shadow } = getAngleTransform(device.angle)
-  
-  // Frame dimensions
-  const frameRadius = width * 0.08 // Corner radius
-  const bezelWidth = width * 0.025 // Bezel thickness
-  const screenRadius = frameRadius - bezelWidth
+
+  // Scale from frame image pixels to our render size
+  const scale = width / spec.frameWidth
+
+  // Position the screenshot exactly at the screen region inside the frame
+  const screenLeft = spec.screen.x * scale
+  const screenTop = spec.screen.y * scale
+  const screenW = spec.screen.width * scale
+  const screenH = spec.screen.height * scale
+
+  // Clip the whole composite to the device body shape so nothing leaks outside
+  const bodyRadius = width * 0.17
 
   return (
     <div
       className="relative"
-      style={{
-        width,
-        height,
-      }}
+      style={{ width, height }}
     >
-      {/* Phone container with transform and shadow */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 overflow-hidden"
         style={{
           transform,
           transformStyle: 'preserve-3d',
+          filter: `drop-shadow(${shadow})`,
+          borderRadius: bodyRadius,
         }}
       >
-        {/* Phone outer frame - titanium finish */}
+        {/* Layer 1: Screenshot placed at the screen region inside the frame */}
         <div
-          className="absolute inset-0"
+          className="absolute overflow-hidden"
           style={{
-            borderRadius: frameRadius,
-            background: `
-              linear-gradient(135deg, 
-                #3a3a3c 0%, 
-                #2c2c2e 20%, 
-                #1c1c1e 50%, 
-                #2c2c2e 80%, 
-                #3a3a3c 100%
-              )
-            `,
-            boxShadow: `${shadow}, inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(0,0,0,0.3)`,
-          }}
-        >
-          {/* Side buttons - left side */}
-          <div
-            className="absolute"
-            style={{
-              left: -3,
-              top: height * 0.18,
-              width: 3,
-              height: height * 0.04,
-              borderRadius: '2px 0 0 2px',
-              background: 'linear-gradient(90deg, #4a4a4c, #3a3a3c)',
-            }}
-          />
-          <div
-            className="absolute"
-            style={{
-              left: -3,
-              top: height * 0.25,
-              width: 3,
-              height: height * 0.08,
-              borderRadius: '2px 0 0 2px',
-              background: 'linear-gradient(90deg, #4a4a4c, #3a3a3c)',
-            }}
-          />
-          <div
-            className="absolute"
-            style={{
-              left: -3,
-              top: height * 0.35,
-              width: 3,
-              height: height * 0.08,
-              borderRadius: '2px 0 0 2px',
-              background: 'linear-gradient(90deg, #4a4a4c, #3a3a3c)',
-            }}
-          />
-          
-          {/* Power button - right side */}
-          <div
-            className="absolute"
-            style={{
-              right: -3,
-              top: height * 0.25,
-              width: 3,
-              height: height * 0.1,
-              borderRadius: '0 2px 2px 0',
-              background: 'linear-gradient(270deg, #4a4a4c, #3a3a3c)',
-            }}
-          />
-        </div>
-
-        {/* Screen bezel/edge */}
-        <div
-          className="absolute"
-          style={{
-            top: bezelWidth,
-            left: bezelWidth,
-            right: bezelWidth,
-            bottom: bezelWidth,
-            borderRadius: screenRadius,
+            top: screenTop,
+            left: screenLeft,
+            width: screenW,
+            height: screenH,
             background: '#000',
-            overflow: 'hidden',
+            borderRadius: screenW * 0.14,
           }}
         >
-          {/* Screenshot or placeholder */}
           {screenshotUrl ? (
             <img
               src={screenshotUrl}
@@ -183,9 +121,9 @@ export default function DeviceMockup({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div 
+            <div
               className="w-full h-full flex items-center justify-center"
-              style={{ 
+              style={{
                 background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)',
               }}
             >
@@ -196,18 +134,14 @@ export default function DeviceMockup({
             </div>
           )}
         </div>
-        
-        {/* Screen glass reflection overlay */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: bezelWidth,
-            left: bezelWidth,
-            right: bezelWidth,
-            bottom: bezelWidth,
-            borderRadius: screenRadius,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 40%, transparent 100%)',
-          }}
+
+        {/* Layer 2: PNG device frame on top — opaque bezel masks the screenshot edges */}
+        <img
+          src={spec.frameSrc}
+          alt=""
+          className="absolute inset-0 w-full h-full"
+          style={{ pointerEvents: 'none' }}
+          draggable={false}
         />
       </div>
     </div>

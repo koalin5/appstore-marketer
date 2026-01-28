@@ -52,7 +52,7 @@ export interface DeviceConfig {
   verticalPosition: number // percentage from top (0-80)
 }
 
-export type DeviceModel = 'iphone-16-pro-max' | 'iphone-16-pro' | 'iphone-15-pro-max'
+export type DeviceModel = 'iphone-17-pro-max' | 'iphone-17-pro' | 'iphone-16-pro-max' | 'iphone-16-pro'
 
 export type AnglePreset =
   | 'straight'
@@ -61,13 +61,3 @@ export type AnglePreset =
   | 'dramatic-left'
   | 'dramatic-right'
 
-export interface DeviceMockupData {
-  frameImage: string
-  screenBounds: {
-    [key in AnglePreset]: {
-      corners: [number, number][] // 4 corners [x, y]
-      width: number
-      height: number
-    }
-  }
-}

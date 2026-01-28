@@ -93,7 +93,7 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
           verticalPosition: 12,
         },
         device: {
-          model: 'iphone-16-pro-max',
+          model: 'iphone-17-pro-max',
           angle: 'straight',
           verticalPosition: 35,
         },

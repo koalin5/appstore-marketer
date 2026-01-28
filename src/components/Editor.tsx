@@ -135,7 +135,7 @@ export default function Editor() {
         align: 'center',
         verticalPosition: 12,
       },
-      device: { model: 'iphone-16-pro-max', angle: 'straight', verticalPosition: 35 },
+      device: { model: 'iphone-17-pro-max', angle: 'straight', verticalPosition: 35 },
       screenshotRef: null,
     }
 
