@@ -40,6 +40,7 @@ export interface TextConfig {
   subCaption: string
   subCaptionFont: FontOption
   subCaptionSize: number // Percentage of headline size (25-65)
+  subCaptionSpacing: number // Percentage of headline size (6-24)
 }
 
 export type FontOption =

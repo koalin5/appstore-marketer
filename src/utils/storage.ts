@@ -6,6 +6,7 @@ const CURRENT_PROJECT_KEY = 'ios-screenshot-current-project'
 const SCREENSHOT_PREFIX = 'screenshot-'
 const BG_IMAGE_PREFIX = 'bg-image-'
 const DEFAULT_SUB_CAPTION_SIZE = 42
+const DEFAULT_SUB_CAPTION_SPACING = 12
 
 function withTextDefaults(project: Project): Project {
   return {
@@ -21,6 +22,10 @@ function withTextDefaults(project: Project): Project {
           typeof slide.text.subCaptionSize === 'number'
             ? slide.text.subCaptionSize
             : DEFAULT_SUB_CAPTION_SIZE,
+        subCaptionSpacing:
+          typeof slide.text.subCaptionSpacing === 'number'
+            ? slide.text.subCaptionSpacing
+            : DEFAULT_SUB_CAPTION_SPACING,
       },
     })),
   }
@@ -169,6 +174,7 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
           subCaption: '',
           subCaptionFont: 'inter',
           subCaptionSize: DEFAULT_SUB_CAPTION_SIZE,
+          subCaptionSpacing: DEFAULT_SUB_CAPTION_SPACING,
         },
         device: {
           model: 'iphone-17-pro-max',

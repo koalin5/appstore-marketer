@@ -82,7 +82,10 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
   const shouldShowSubCaption = Boolean(slide.text.showSubCaption && slide.text.subCaption.trim())
   const subCaptionScale =
     typeof slide.text.subCaptionSize === 'number' ? Math.max(25, Math.min(65, slide.text.subCaptionSize)) : 42
+  const subCaptionSpacingScale =
+    typeof slide.text.subCaptionSpacing === 'number' ? Math.max(6, Math.min(24, slide.text.subCaptionSpacing)) : 12
   const subCaptionFontSize = Math.max(24, Math.min(72, textSize * (subCaptionScale / 100))) * scale
+  const subCaptionMarginTop = Math.max(8, Math.min(36, textSize * (subCaptionSpacingScale / 100))) * scale
   const subCaptionFontFamily =
     FONT_OPTIONS.find((f) => f.id === (slide.text.subCaptionFont ?? slide.text.font))?.family || fontFamily
 
@@ -147,7 +150,7 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
         {shouldShowSubCaption && (
           <div
             style={{
-              marginTop: `${Math.max(10, textSize * 0.08) * scale}px`,
+              marginTop: `${subCaptionMarginTop}px`,
               fontFamily: subCaptionFontFamily,
               fontSize: `${subCaptionFontSize}px`,
               fontWeight: 500,

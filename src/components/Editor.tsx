@@ -19,6 +19,7 @@ import { DEVICE_MODELS } from '../presets/colors'
 import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
 
 const DEFAULT_SUB_CAPTION_SIZE = 42
+const DEFAULT_SUB_CAPTION_SPACING = 12
 
 export default function Editor() {
   const [project, setProject] = useState<Project | null>(null)
@@ -150,6 +151,7 @@ export default function Editor() {
         subCaption: '',
         subCaptionFont: 'inter',
         subCaptionSize: DEFAULT_SUB_CAPTION_SIZE,
+        subCaptionSpacing: DEFAULT_SUB_CAPTION_SPACING,
       },
       device: { model: 'iphone-17-pro-max', angle: 'straight', verticalPosition: 35 },
       screenshotRef: null,
@@ -289,6 +291,10 @@ export default function Editor() {
     typeof currentSlide.text.subCaptionSize === 'number'
       ? currentSlide.text.subCaptionSize
       : DEFAULT_SUB_CAPTION_SIZE
+  const subCaptionSpacing =
+    typeof currentSlide.text.subCaptionSpacing === 'number'
+      ? currentSlide.text.subCaptionSpacing
+      : DEFAULT_SUB_CAPTION_SPACING
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -514,6 +520,21 @@ export default function Editor() {
                       max="65"
                       value={subCaptionSize}
                       onChange={(e) => handleTextChange({ subCaptionSize: Number(e.target.value) })}
+                      className="w-full accent-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500 font-medium">Gap from Headline</span>
+                      <span className="text-gray-400 tabular-nums">{subCaptionSpacing}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="6"
+                      max="24"
+                      value={subCaptionSpacing}
+                      onChange={(e) => handleTextChange({ subCaptionSpacing: Number(e.target.value) })}
                       className="w-full accent-gray-900"
                     />
                   </div>
