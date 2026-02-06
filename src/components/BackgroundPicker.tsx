@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { BackgroundConfig } from '../types'
 import { SOLID_COLORS, GRADIENT_PRESETS } from '../presets/colors'
 import { saveBackgroundImage } from '../utils/storage'
@@ -18,6 +18,14 @@ export default function BackgroundPicker({
   const [customStart, setCustomStart] = useState(background.gradient?.colors[0] || '#FFFFFF')
   const [customEnd, setCustomEnd] = useState(background.gradient?.colors[1] || '#E8F5E9')
   const [gradientDirection, setGradientDirection] = useState(background.gradient?.direction || 180)
+
+  useEffect(() => {
+    if (background.type === 'gradient' && background.gradient) {
+      setCustomStart(background.gradient.colors[0] || '#FFFFFF')
+      setCustomEnd(background.gradient.colors[1] || '#E8F5E9')
+      setGradientDirection(background.gradient.direction)
+    }
+  }, [background])
 
   const handleSolidColorSelect = (color: string) => {
     onChange({
@@ -56,9 +64,8 @@ export default function BackgroundPicker({
     const file = e.target.files?.[0]
     if (!file) return
 
-    const blob = new Blob([file], { type: file.type })
-    const imageRef = `bg-image-${crypto.randomUUID()}`
-    await saveBackgroundImage(imageRef, blob)
+    const imageRef = crypto.randomUUID()
+    await saveBackgroundImage(imageRef, file)
 
     onChange({
       type: 'image',

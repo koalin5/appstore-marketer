@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import type { Slide } from '../types'
 import { FONT_OPTIONS } from '../presets/colors'
 import { DEVICE_SPECS } from '../presets/deviceSpecs'
+import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
 import { getBackgroundImage } from '../utils/storage'
 import DeviceMockup from './DeviceMockup'
 
@@ -9,11 +10,6 @@ interface CanvasProps {
   slide: Slide
   scale?: number
 }
-
-// App Store screenshot dimensions are FIXED - always 6.9" display size
-// This is the export target, regardless of which device mockup is shown
-const SCREENSHOT_WIDTH = 1290
-const SCREENSHOT_HEIGHT = 2796
 
 export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -29,18 +25,42 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
 
   // Load background image
   useEffect(() => {
-    if (slide.background.type === 'image' && slide.background.imageRef) {
-      getBackgroundImage(slide.background.imageRef).then(blob => {
-        if (blob) {
-          const url = URL.createObjectURL(blob)
-          setBgImageUrl(url)
-          return () => URL.revokeObjectURL(url)
-        }
-      })
-    } else {
-      setBgImageUrl(null)
+    let cancelled = false
+
+    async function loadBackgroundImage() {
+      if (slide.background.type !== 'image' || !slide.background.imageRef) {
+        setBgImageUrl(null)
+        return
+      }
+
+      const blob = await getBackgroundImage(slide.background.imageRef)
+      if (!blob || cancelled) {
+        if (!cancelled) setBgImageUrl(null)
+        return
+      }
+
+      const url = URL.createObjectURL(blob)
+      if (!cancelled) {
+        setBgImageUrl(url)
+      } else {
+        URL.revokeObjectURL(url)
+      }
     }
-  }, [slide.background])
+
+    loadBackgroundImage()
+
+    return () => {
+      cancelled = true
+    }
+  }, [slide.background.type, slide.background.imageRef])
+
+  useEffect(() => {
+    return () => {
+      if (bgImageUrl) {
+        URL.revokeObjectURL(bgImageUrl)
+      }
+    }
+  }, [bgImageUrl])
 
   // Get background style
   const getBackgroundStyle = () => {

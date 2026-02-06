@@ -25,20 +25,20 @@ No test framework is configured.
 
 **Component hierarchy**:
 - **Editor** (`src/components/Editor.tsx`): Central state manager. Holds the slides array, current slide index, and all editing state. Auto-saves to localStorage every 500ms. Renders the left slide thumbnails panel, center canvas preview, and right-side editing controls.
-- **Canvas** (`src/components/Canvas.tsx`): Renders a slide at fixed 1290x2796px (App Store native resolution). Composes background, text overlay, and device mockup. This is the element captured for export.
+- **Canvas** (`src/components/Canvas.tsx`): Renders a slide at fixed 1320x2868px (App Store-compliant iPhone 6.9" resolution). Composes background, text overlay, and device mockup. This is the element captured for export.
 - **DeviceMockup** (`src/components/DeviceMockup.tsx`): Renders the iPhone frame with CSS 3D perspective transforms. Places the user's screenshot inside the device bezel.
-- **ExportPanel** (`src/components/ExportPanel.tsx`): Single-slide PNG export via html2canvas, batch ZIP export via JSZip + FileSaver.
+- **ExportPanel** (`src/components/ExportPanel.tsx`): Single-slide PNG export via snapdom, batch ZIP export via JSZip + FileSaver.
 - **BackgroundPicker** / **FontPicker**: UI controls for background and font selection.
 
 **Storage layer** (`src/utils/storage.ts`): Wraps localStorage for project JSON and `idb-keyval` for binary image data (screenshots, background images).
 
-**Export pipeline** (`src/utils/export.ts`): Uses html2canvas to rasterize the Canvas DOM element to PNG at exact App Store dimensions.
+**Export pipeline** (`src/utils/export.ts`): Uses snapdom to rasterize the Canvas DOM element to PNG at exact App Store dimensions.
 
 **Presets** (`src/presets/colors.ts`): Curated color palettes, gradient presets, font options, device model specs, and angle presets.
 
 ## Key Constraints
 
-- Canvas always renders at 1290x2796px regardless of selected device model — this is the App Store screenshot dimension for iPhone 16 Pro Max.
+- Canvas always renders at 1320x2868px regardless of selected device model — this is an App Store-compliant iPhone 6.9" screenshot size.
 - Thumbnails in the slide panel render at 0.18 scale using CSS transforms.
 - TypeScript strict mode is enabled with `noUnusedLocals` and `noUnusedParameters`.
 - ESLint enforces `--max-warnings 0` — any warning fails the lint.

@@ -65,7 +65,7 @@ function solveLinearSystem(A: number[][], b: number[]): number[] {
         maxRow = k
       }
     }
-    ;[augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]]
+    [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]]
     
     // Eliminate
     for (let k = i + 1; k < n; k++) {

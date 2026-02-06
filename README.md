@@ -4,7 +4,7 @@ A web-based tool for creating polished App Store screenshots for iOS apps. Desig
 
 ## Features
 
-- **Device Mockups**: iPhone 16 Pro Max, iPhone 16 Pro, iPhone 15 Pro Max with 5 angle presets
+- **Device Mockups**: iPhone 17 Pro Max, iPhone 17 Pro, iPhone 16 Pro Max, iPhone 16 Pro with 5 angle presets
 - **Text Overlays**: Curated font selection (6 fonts), constrained positioning, alignment controls
 - **Backgrounds**: Solid colors, gradients, or custom images with blur
 - **Screenshot Import**: Drag-and-drop or file picker with perspective transforms for tilted angles
@@ -45,10 +45,13 @@ npm run build
 
 ## App Store Dimensions
 
-The tool exports at exact App Store requirements:
-- iPhone 16 Pro Max: 1290 × 2796 pixels
-- iPhone 16 Pro: 1179 × 2556 pixels
-- iPhone 15 Pro Max: 1290 × 2796 pixels
+The tool exports iPhone screenshots in an App Store-compliant 6.9" size:
+- **Default export**: 1320 × 2868 pixels
+
+Apple currently accepts these 6.9" portrait sizes:
+- 1320 × 2868
+- 1290 × 2796
+- 1260 × 2736
 
 ## Tech Stack
 
@@ -56,7 +59,7 @@ The tool exports at exact App Store requirements:
 - TypeScript
 - Vite
 - Tailwind CSS
-- html2canvas (for export)
+- snapdom (for export)
 - IndexedDB (for image storage)
 
 ## Storage

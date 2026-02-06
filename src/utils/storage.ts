@@ -3,6 +3,43 @@ import type { Project } from '../types'
 
 const PROJECTS_KEY = 'ios-screenshot-projects'
 const CURRENT_PROJECT_KEY = 'ios-screenshot-current-project'
+const SCREENSHOT_PREFIX = 'screenshot-'
+const BG_IMAGE_PREFIX = 'bg-image-'
+
+function toAssetKey(prefix: string, ref: string): string {
+  return ref.startsWith(prefix) ? ref : `${prefix}${ref}`
+}
+
+function toLegacyDoublePrefixedKey(prefix: string, ref: string): string | null {
+  if (!ref.startsWith(prefix)) return null
+  return `${prefix}${ref}`
+}
+
+async function readAssetWithLegacyFallback(prefix: string, ref: string): Promise<Blob | undefined> {
+  const canonicalKey = toAssetKey(prefix, ref)
+  const blob = await get<Blob>(canonicalKey)
+  if (blob) return blob
+
+  const legacyKey = toLegacyDoublePrefixedKey(prefix, ref)
+  if (!legacyKey) return undefined
+
+  const legacyBlob = await get<Blob>(legacyKey)
+  if (!legacyBlob) return undefined
+
+  // Migrate old double-prefixed keys into canonical keys.
+  await set(canonicalKey, legacyBlob)
+  await del(legacyKey)
+  return legacyBlob
+}
+
+async function deleteAsset(prefix: string, ref: string): Promise<void> {
+  await del(toAssetKey(prefix, ref))
+
+  const legacyKey = toLegacyDoublePrefixedKey(prefix, ref)
+  if (legacyKey) {
+    await del(legacyKey)
+  }
+}
 
 export async function saveProject(project: Project): Promise<void> {
   const projects = await getProjects()
@@ -36,14 +73,22 @@ export async function deleteProject(id: string): Promise<void> {
   // Delete associated assets
   const project = projects.find((p) => p.id === id)
   if (project) {
+    const screenshotRefs = new Set<string>()
+    const backgroundImageRefs = new Set<string>()
+
     for (const slide of project.slides) {
       if (slide.screenshotRef) {
-        await del(`screenshot-${slide.id}`)
+        screenshotRefs.add(slide.screenshotRef)
       }
-      if (slide.background.imageRef) {
-        await del(`bg-image-${slide.id}`)
+      if (slide.background.type === 'image' && slide.background.imageRef) {
+        backgroundImageRefs.add(slide.background.imageRef)
       }
     }
+
+    await Promise.all([
+      ...Array.from(screenshotRefs).map((ref) => deleteAsset(SCREENSHOT_PREFIX, ref)),
+      ...Array.from(backgroundImageRefs).map((ref) => deleteAsset(BG_IMAGE_PREFIX, ref)),
+    ])
   }
 }
 
@@ -56,19 +101,27 @@ export async function setCurrentProjectId(id: string): Promise<void> {
 }
 
 export async function saveScreenshot(slideId: string, blob: Blob): Promise<void> {
-  await set(`screenshot-${slideId}`, blob)
+  await set(toAssetKey(SCREENSHOT_PREFIX, slideId), blob)
 }
 
 export async function getScreenshot(slideId: string): Promise<Blob | undefined> {
-  return await get(`screenshot-${slideId}`)
+  return await readAssetWithLegacyFallback(SCREENSHOT_PREFIX, slideId)
+}
+
+export async function deleteScreenshot(slideId: string): Promise<void> {
+  await deleteAsset(SCREENSHOT_PREFIX, slideId)
 }
 
 export async function saveBackgroundImage(slideId: string, blob: Blob): Promise<void> {
-  await set(`bg-image-${slideId}`, blob)
+  await set(toAssetKey(BG_IMAGE_PREFIX, slideId), blob)
 }
 
 export async function getBackgroundImage(slideId: string): Promise<Blob | undefined> {
-  return await get(`bg-image-${slideId}`)
+  return await readAssetWithLegacyFallback(BG_IMAGE_PREFIX, slideId)
+}
+
+export async function deleteBackgroundImage(slideId: string): Promise<void> {
+  await deleteAsset(BG_IMAGE_PREFIX, slideId)
 }
 
 export function createNewProject(name: string = 'Untitled Project'): Project {

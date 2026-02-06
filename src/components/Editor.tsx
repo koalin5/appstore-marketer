@@ -11,9 +11,12 @@ import {
   getProject,
   saveScreenshot,
   getScreenshot,
+  deleteScreenshot,
+  deleteBackgroundImage,
 } from '../utils/storage'
 import { captureSlideAsPNG, captureSlideAsBlob, exportBlobsAsZIP } from '../utils/export'
 import { DEVICE_MODELS } from '../presets/colors'
+import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
 
 export default function Editor() {
   const [project, setProject] = useState<Project | null>(null)
@@ -39,6 +42,14 @@ export default function Editor() {
     }
 
     loadInitialProject()
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
   }, [])
 
   const autoSave = useCallback(async (updatedProject: Project) => {
@@ -112,13 +123,12 @@ export default function Editor() {
     async (file: File) => {
       if (!project) return
 
-      const blob = new Blob([file], { type: file.type })
-      const screenshotRef = `screenshot-${project.slides[currentSlideIndex].id}`
-      await saveScreenshot(screenshotRef, blob)
+      const screenshotRef = crypto.randomUUID()
+      await saveScreenshot(screenshotRef, file)
 
       updateSlide({ screenshotRef })
     },
-    [project, currentSlideIndex, updateSlide]
+    [project, updateSlide]
   )
 
   const handleSlideAdd = useCallback(() => {
@@ -167,7 +177,7 @@ export default function Editor() {
       if (sourceSlide.screenshotRef) {
         const screenshotBlob = await getScreenshot(sourceSlide.screenshotRef)
         if (screenshotBlob) {
-          const newScreenshotRef = `screenshot-${newSlideId}`
+          const newScreenshotRef = crypto.randomUUID()
           await saveScreenshot(newScreenshotRef, screenshotBlob)
           newSlide.screenshotRef = newScreenshotRef
         }
@@ -185,9 +195,10 @@ export default function Editor() {
   )
 
   const handleSlideDelete = useCallback(
-    (index: number) => {
+    async (index: number) => {
       if (!project || project.slides.length <= 1) return
 
+      const slideToDelete = project.slides[index]
       const updatedSlides = project.slides.filter((_, i) => i !== index)
       const newIndex = Math.min(currentSlideIndex, updatedSlides.length - 1)
 
@@ -195,6 +206,26 @@ export default function Editor() {
       setProject(updatedProject)
       setCurrentSlideIndex(newIndex)
       autoSave(updatedProject)
+
+      try {
+        if (slideToDelete.screenshotRef) {
+          const stillReferenced = updatedSlides.some((slide) => slide.screenshotRef === slideToDelete.screenshotRef)
+          if (!stillReferenced) {
+            await deleteScreenshot(slideToDelete.screenshotRef)
+          }
+        }
+
+        if (slideToDelete.background.type === 'image' && slideToDelete.background.imageRef) {
+          const stillReferenced = updatedSlides.some(
+            (slide) => slide.background.type === 'image' && slide.background.imageRef === slideToDelete.background.imageRef
+          )
+          if (!stillReferenced) {
+            await deleteBackgroundImage(slideToDelete.background.imageRef)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to clean up deleted slide assets:', error)
+      }
     },
     [project, currentSlideIndex, autoSave]
   )
@@ -271,7 +302,7 @@ export default function Editor() {
           
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
-              {project.slides.length} screenshot{project.slides.length !== 1 ? 's' : ''} • 1290 × 2796px
+              {project.slides.length} screenshot{project.slides.length !== 1 ? 's' : ''} • {SCREENSHOT_WIDTH} × {SCREENSHOT_HEIGHT}px
             </span>
             <ExportPanel
               slideCount={project.slides.length}
@@ -351,7 +382,7 @@ export default function Editor() {
             <button
               onClick={handleSlideAdd}
               className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-colors"
-              style={{ width: 1290 * 0.18, height: 2796 * 0.18 }}
+              style={{ width: SCREENSHOT_WIDTH * 0.18, height: SCREENSHOT_HEIGHT * 0.18 }}
             >
               <span className="text-3xl text-gray-400 mb-1">+</span>
             </button>
