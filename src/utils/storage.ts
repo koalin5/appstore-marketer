@@ -5,6 +5,26 @@ const PROJECTS_KEY = 'ios-screenshot-projects'
 const CURRENT_PROJECT_KEY = 'ios-screenshot-current-project'
 const SCREENSHOT_PREFIX = 'screenshot-'
 const BG_IMAGE_PREFIX = 'bg-image-'
+const DEFAULT_SUB_CAPTION_SIZE = 42
+
+function withTextDefaults(project: Project): Project {
+  return {
+    ...project,
+    slides: project.slides.map((slide) => ({
+      ...slide,
+      text: {
+        ...slide.text,
+        showSubCaption: slide.text.showSubCaption ?? false,
+        subCaption: slide.text.subCaption ?? '',
+        subCaptionFont: slide.text.subCaptionFont ?? slide.text.font,
+        subCaptionSize:
+          typeof slide.text.subCaptionSize === 'number'
+            ? slide.text.subCaptionSize
+            : DEFAULT_SUB_CAPTION_SIZE,
+      },
+    })),
+  }
+}
 
 function toAssetKey(prefix: string, ref: string): string {
   return ref.startsWith(prefix) ? ref : `${prefix}${ref}`
@@ -57,7 +77,8 @@ export async function saveProject(project: Project): Promise<void> {
 
 export async function getProjects(): Promise<Project[]> {
   const data = localStorage.getItem(PROJECTS_KEY)
-  return data ? JSON.parse(data) : []
+  const projects = data ? (JSON.parse(data) as Project[]) : []
+  return projects.map(withTextDefaults)
 }
 
 export async function getProject(id: string): Promise<Project | null> {
@@ -144,6 +165,10 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
           color: 'black',
           align: 'center',
           verticalPosition: 12,
+          showSubCaption: false,
+          subCaption: '',
+          subCaptionFont: 'inter',
+          subCaptionSize: DEFAULT_SUB_CAPTION_SIZE,
         },
         device: {
           model: 'iphone-17-pro-max',

@@ -36,6 +36,10 @@ export interface TextConfig {
   color: 'white' | 'black' | 'auto'
   align: 'left' | 'center' | 'right'
   verticalPosition: number // 0-100, percentage from top
+  showSubCaption: boolean
+  subCaption: string
+  subCaptionFont: FontOption
+  subCaptionSize: number // Percentage of headline size (25-65)
 }
 
 export type FontOption =
@@ -60,4 +64,3 @@ export type AnglePreset =
   | 'slight-right'
   | 'dramatic-left'
   | 'dramatic-right'
-

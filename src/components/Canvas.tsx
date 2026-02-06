@@ -79,6 +79,12 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
   const fontSize = textSize * scale
   const fontFamily = FONT_OPTIONS.find((f) => f.id === slide.text.font)?.family || 'Inter, sans-serif'
   const textColor = slide.text.color === 'white' ? '#FFFFFF' : '#000000'
+  const shouldShowSubCaption = Boolean(slide.text.showSubCaption && slide.text.subCaption.trim())
+  const subCaptionScale =
+    typeof slide.text.subCaptionSize === 'number' ? Math.max(25, Math.min(65, slide.text.subCaptionSize)) : 42
+  const subCaptionFontSize = Math.max(24, Math.min(72, textSize * (subCaptionScale / 100))) * scale
+  const subCaptionFontFamily =
+    FONT_OPTIONS.find((f) => f.id === (slide.text.subCaptionFont ?? slide.text.font))?.family || fontFamily
 
   // Device mockup sizing — use frame image aspect ratio
   const deviceSpec = DEVICE_SPECS[slide.device.model]
@@ -118,19 +124,42 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
           top: `${slide.text.verticalPosition}%`,
           transform: 'translateY(-50%)',
           padding: `0 ${65 * scale}px`,
-          fontFamily,
-          fontSize: `${fontSize}px`,
-          fontWeight: 700,
           color: textColor,
           textAlign: slide.text.align,
-          lineHeight: 1.2,
           textShadow: slide.text.color === 'white'
             ? `0 ${11 * scale}px ${22 * scale}px rgba(0,0,0,0.4)`
             : 'none',
           zIndex: 10,
         }}
       >
-        {slide.text.content || 'Your headline here'}
+        <div
+          style={{
+            fontFamily,
+            fontSize: `${fontSize}px`,
+            fontWeight: 700,
+            lineHeight: 1.2,
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+          }}
+        >
+          {slide.text.content || 'Your headline here'}
+        </div>
+        {shouldShowSubCaption && (
+          <div
+            style={{
+              marginTop: `${Math.max(10, textSize * 0.08) * scale}px`,
+              fontFamily: subCaptionFontFamily,
+              fontSize: `${subCaptionFontSize}px`,
+              fontWeight: 500,
+              lineHeight: 1.3,
+              opacity: 0.9,
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+            }}
+          >
+            {slide.text.subCaption}
+          </div>
+        )}
       </div>
 
       {/* Device Mockup */}

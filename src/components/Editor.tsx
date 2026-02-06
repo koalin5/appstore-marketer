@@ -18,6 +18,8 @@ import { captureSlideAsPNG, captureSlideAsBlob, exportBlobsAsZIP } from '../util
 import { DEVICE_MODELS } from '../presets/colors'
 import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
 
+const DEFAULT_SUB_CAPTION_SIZE = 42
+
 export default function Editor() {
   const [project, setProject] = useState<Project | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -144,6 +146,10 @@ export default function Editor() {
         color: 'black',
         align: 'center',
         verticalPosition: 12,
+        showSubCaption: false,
+        subCaption: '',
+        subCaptionFont: 'inter',
+        subCaptionSize: DEFAULT_SUB_CAPTION_SIZE,
       },
       device: { model: 'iphone-17-pro-max', angle: 'straight', verticalPosition: 35 },
       screenshotRef: null,
@@ -278,6 +284,11 @@ export default function Editor() {
 
   const currentSlide = project.slides[currentSlideIndex]
   const textSize = typeof currentSlide.text.size === 'number' ? currentSlide.text.size : 96
+  const showSubCaption = currentSlide.text.showSubCaption ?? false
+  const subCaptionSize =
+    typeof currentSlide.text.subCaptionSize === 'number'
+      ? currentSlide.text.subCaptionSize
+      : DEFAULT_SUB_CAPTION_SIZE
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -465,6 +476,49 @@ export default function Editor() {
                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                 placeholder="Your headline here"
               />
+
+              <label className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+                <input
+                  type="checkbox"
+                  checked={showSubCaption}
+                  onChange={(e) => handleTextChange({ showSubCaption: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 accent-gray-900"
+                />
+                Show sub-caption
+              </label>
+
+              {showSubCaption && (
+                <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+                  <input
+                    type="text"
+                    value={currentSlide.text.subCaption ?? ''}
+                    onChange={(e) => handleTextChange({ subCaption: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                    placeholder="Add context under the headline"
+                  />
+
+                  <FontPicker
+                    font={currentSlide.text.subCaptionFont ?? currentSlide.text.font}
+                    onChange={(font) => handleTextChange({ subCaptionFont: font })}
+                    label="Sub-caption Font"
+                  />
+
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500 font-medium">Sub-caption Size</span>
+                      <span className="text-gray-400 tabular-nums">{subCaptionSize}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="25"
+                      max="65"
+                      value={subCaptionSize}
+                      onChange={(e) => handleTextChange({ subCaptionSize: Number(e.target.value) })}
+                      className="w-full accent-gray-900"
+                    />
+                  </div>
+                </div>
+              )}
 
               <FontPicker
                 font={currentSlide.text.font}

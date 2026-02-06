@@ -4,12 +4,13 @@ import { FONT_OPTIONS } from '../presets/colors'
 interface FontPickerProps {
   font: FontOption
   onChange: (font: FontOption) => void
+  label?: string
 }
 
-export default function FontPicker({ font, onChange }: FontPickerProps) {
+export default function FontPicker({ font, onChange, label = 'Font' }: FontPickerProps) {
   return (
     <div>
-      <label className="block text-sm text-gray-600 font-medium mb-2">Font</label>
+      <label className="block text-sm text-gray-600 font-medium mb-2">{label}</label>
       <select
         value={font}
         onChange={(e) => onChange(e.target.value as FontOption)}
