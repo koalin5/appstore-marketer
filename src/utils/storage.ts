@@ -7,14 +7,22 @@ const SCREENSHOT_PREFIX = 'screenshot-'
 const BG_IMAGE_PREFIX = 'bg-image-'
 const DEFAULT_SUB_CAPTION_SIZE = 42
 const DEFAULT_SUB_CAPTION_SPACING = 12
+const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
+const DEFAULT_DEVICE_VERTICAL_POSITION = 35
+const DEFAULT_DEVICE_FRAME_SCALE = 55
+const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
 
-function withTextDefaults(project: Project): Project {
+function withSlideDefaults(project: Project): Project {
   return {
     ...project,
     slides: project.slides.map((slide) => ({
       ...slide,
       text: {
         ...slide.text,
+        horizontalOffset:
+          typeof slide.text.horizontalOffset === 'number'
+            ? slide.text.horizontalOffset
+            : DEFAULT_HEADLINE_HORIZONTAL_OFFSET,
         showSubCaption: slide.text.showSubCaption ?? false,
         subCaption: slide.text.subCaption ?? '',
         subCaptionFont: slide.text.subCaptionFont ?? slide.text.font,
@@ -26,6 +34,22 @@ function withTextDefaults(project: Project): Project {
           typeof slide.text.subCaptionSpacing === 'number'
             ? slide.text.subCaptionSpacing
             : DEFAULT_SUB_CAPTION_SPACING,
+      },
+      device: {
+        ...slide.device,
+        verticalPosition:
+          typeof slide.device.verticalPosition === 'number'
+            ? slide.device.verticalPosition
+            : DEFAULT_DEVICE_VERTICAL_POSITION,
+        frameScale:
+          typeof slide.device.frameScale === 'number'
+            ? slide.device.frameScale
+            : DEFAULT_DEVICE_FRAME_SCALE,
+        horizontalPosition:
+          typeof slide.device.horizontalPosition === 'number'
+            ? slide.device.horizontalPosition
+            : DEFAULT_DEVICE_HORIZONTAL_POSITION,
+        allowOffCanvasPosition: slide.device.allowOffCanvasPosition ?? false,
       },
     })),
   }
@@ -83,7 +107,7 @@ export async function saveProject(project: Project): Promise<void> {
 export async function getProjects(): Promise<Project[]> {
   const data = localStorage.getItem(PROJECTS_KEY)
   const projects = data ? (JSON.parse(data) as Project[]) : []
-  return projects.map(withTextDefaults)
+  return projects.map(withSlideDefaults)
 }
 
 export async function getProject(id: string): Promise<Project | null> {
@@ -170,6 +194,7 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
           color: 'black',
           align: 'center',
           verticalPosition: 12,
+          horizontalOffset: DEFAULT_HEADLINE_HORIZONTAL_OFFSET,
           showSubCaption: false,
           subCaption: '',
           subCaptionFont: 'inter',
@@ -179,7 +204,10 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
         device: {
           model: 'iphone-17-pro-max',
           angle: 'straight',
-          verticalPosition: 35,
+          verticalPosition: DEFAULT_DEVICE_VERTICAL_POSITION,
+          frameScale: DEFAULT_DEVICE_FRAME_SCALE,
+          horizontalPosition: DEFAULT_DEVICE_HORIZONTAL_POSITION,
+          allowOffCanvasPosition: false,
         },
         screenshotRef: null,
       },

@@ -20,6 +20,10 @@ import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
 
 const DEFAULT_SUB_CAPTION_SIZE = 42
 const DEFAULT_SUB_CAPTION_SPACING = 12
+const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
+const DEFAULT_DEVICE_VERTICAL_POSITION = 35
+const DEFAULT_DEVICE_FRAME_SCALE = 55
+const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
 
 export default function Editor() {
   const [project, setProject] = useState<Project | null>(null)
@@ -147,13 +151,21 @@ export default function Editor() {
         color: 'black',
         align: 'center',
         verticalPosition: 12,
+        horizontalOffset: DEFAULT_HEADLINE_HORIZONTAL_OFFSET,
         showSubCaption: false,
         subCaption: '',
         subCaptionFont: 'inter',
         subCaptionSize: DEFAULT_SUB_CAPTION_SIZE,
         subCaptionSpacing: DEFAULT_SUB_CAPTION_SPACING,
       },
-      device: { model: 'iphone-17-pro-max', angle: 'straight', verticalPosition: 35 },
+      device: {
+        model: 'iphone-17-pro-max',
+        angle: 'straight',
+        verticalPosition: DEFAULT_DEVICE_VERTICAL_POSITION,
+        frameScale: DEFAULT_DEVICE_FRAME_SCALE,
+        horizontalPosition: DEFAULT_DEVICE_HORIZONTAL_POSITION,
+        allowOffCanvasPosition: false,
+      },
       screenshotRef: null,
     }
 
@@ -295,6 +307,25 @@ export default function Editor() {
     typeof currentSlide.text.subCaptionSpacing === 'number'
       ? currentSlide.text.subCaptionSpacing
       : DEFAULT_SUB_CAPTION_SPACING
+  const deviceVerticalPosition =
+    typeof currentSlide.device.verticalPosition === 'number'
+      ? currentSlide.device.verticalPosition
+      : DEFAULT_DEVICE_VERTICAL_POSITION
+  const deviceFrameScale =
+    typeof currentSlide.device.frameScale === 'number'
+      ? currentSlide.device.frameScale
+      : DEFAULT_DEVICE_FRAME_SCALE
+  const deviceHorizontalPosition =
+    typeof currentSlide.device.horizontalPosition === 'number'
+      ? currentSlide.device.horizontalPosition
+      : DEFAULT_DEVICE_HORIZONTAL_POSITION
+  const allowOffCanvasPosition = currentSlide.device.allowOffCanvasPosition ?? false
+  const standardVerticalPosition = Math.max(0, Math.min(80, deviceVerticalPosition))
+  const headlineVerticalPosition = Math.max(5, Math.min(90, currentSlide.text.verticalPosition))
+  const advancedHeadlineHorizontalOffset =
+    typeof currentSlide.text.horizontalOffset === 'number'
+      ? Math.max(-30, Math.min(30, currentSlide.text.horizontalOffset))
+      : DEFAULT_HEADLINE_HORIZONTAL_OFFSET
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -561,16 +592,17 @@ export default function Editor() {
                     className="w-full accent-gray-900"
                   />
                 </div>
+
                 <div>
                   <div className="flex justify-between text-xs mb-1.5">
                     <span className="text-gray-500 font-medium">Position</span>
-                    <span className="text-gray-400 tabular-nums">{currentSlide.text.verticalPosition}%</span>
+                    <span className="text-gray-400 tabular-nums">{headlineVerticalPosition}%</span>
                   </div>
                   <input
                     type="range"
                     min="5"
                     max="90"
-                    value={currentSlide.text.verticalPosition}
+                    value={headlineVerticalPosition}
                     onChange={(e) => handleTextChange({ verticalPosition: Number(e.target.value) })}
                     className="w-full accent-gray-900"
                   />
@@ -679,18 +711,97 @@ export default function Editor() {
 
               <div>
                 <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-gray-500 font-medium">Frame Size</span>
+                  <span className="text-gray-400 tabular-nums">{deviceFrameScale}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="40"
+                  max="80"
+                  value={deviceFrameScale}
+                  onChange={(e) => handleDeviceChange({ frameScale: Number(e.target.value) })}
+                  className="w-full accent-gray-900"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs mb-1.5">
                   <span className="text-gray-500 font-medium">Vertical Position</span>
-                  <span className="text-gray-400 tabular-nums">{currentSlide.device.verticalPosition ?? 35}%</span>
+                  <span className="text-gray-400 tabular-nums">{standardVerticalPosition}%</span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="80"
-                  value={currentSlide.device.verticalPosition ?? 35}
+                  value={standardVerticalPosition}
                   onChange={(e) => handleDeviceChange({ verticalPosition: Number(e.target.value) })}
                   className="w-full accent-gray-900"
                 />
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+                <input
+                  type="checkbox"
+                  checked={allowOffCanvasPosition}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      handleDeviceChange({ allowOffCanvasPosition: true })
+                      return
+                    }
+                    updateSlide({
+                      device: {
+                        ...currentSlide.device,
+                        allowOffCanvasPosition: false,
+                        horizontalPosition: DEFAULT_DEVICE_HORIZONTAL_POSITION,
+                      },
+                      text: {
+                        ...currentSlide.text,
+                        horizontalOffset: DEFAULT_HEADLINE_HORIZONTAL_OFFSET,
+                      },
+                    })
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 accent-gray-900"
+                />
+                Horizontal positioning
+              </label>
+
+              {allowOffCanvasPosition && (
+                <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+                  <div className="text-[11px] text-gray-500">
+                    Move the frame beyond normal limits and shift headline position for creative layouts.
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500 font-medium">Horizontal Position</span>
+                      <span className="text-gray-400 tabular-nums">{deviceHorizontalPosition}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-30"
+                      max="130"
+                      value={deviceHorizontalPosition}
+                      onChange={(e) => handleDeviceChange({ horizontalPosition: Number(e.target.value) })}
+                      className="w-full accent-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500 font-medium">Headline Horizontal</span>
+                      <span className="text-gray-400 tabular-nums">{advancedHeadlineHorizontalOffset}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-30"
+                      max="30"
+                      value={advancedHeadlineHorizontalOffset}
+                      onChange={(e) => handleTextChange({ horizontalOffset: Number(e.target.value) })}
+                      className="w-full accent-gray-900"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>

@@ -36,6 +36,7 @@ export interface TextConfig {
   color: 'white' | 'black' | 'auto'
   align: 'left' | 'center' | 'right'
   verticalPosition: number // 0-100, percentage from top
+  horizontalOffset: number // percentage offset for creative horizontal shifts (-30 to 30)
   showSubCaption: boolean
   subCaption: string
   subCaptionFont: FontOption
@@ -54,7 +55,10 @@ export type FontOption =
 export interface DeviceConfig {
   model: DeviceModel
   angle: AnglePreset
-  verticalPosition: number // percentage from top (0-80)
+  verticalPosition: number // top position as percentage of canvas height
+  frameScale: number // percentage of canvas width used by the phone frame
+  horizontalPosition: number // center point as percentage of canvas width
+  allowOffCanvasPosition: boolean // unlocks extended positioning range
 }
 
 export type DeviceModel = 'iphone-17-pro-max' | 'iphone-17-pro' | 'iphone-16-pro-max' | 'iphone-16-pro'

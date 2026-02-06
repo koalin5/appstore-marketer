@@ -11,6 +11,11 @@ interface CanvasProps {
   scale?: number
 }
 
+const DEFAULT_DEVICE_VERTICAL_POSITION = 35
+const DEFAULT_DEVICE_FRAME_SCALE = 55
+const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
+const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
+
 export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bgImageUrl, setBgImageUrl] = useState<string | null>(null)
@@ -91,13 +96,36 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
 
   // Device mockup sizing — use frame image aspect ratio
   const deviceSpec = DEVICE_SPECS[slide.device.model]
-  const deviceDisplayWidth = displayWidth * 0.55  // Phone takes 55% of canvas width
-  const deviceDisplayHeight = deviceDisplayWidth * (deviceSpec.frameHeight / deviceSpec.frameWidth)
-  const deviceLeft = (displayWidth - deviceDisplayWidth) / 2
+  const frameScale =
+    typeof slide.device.frameScale === 'number' ? Math.max(40, Math.min(80, slide.device.frameScale)) : DEFAULT_DEVICE_FRAME_SCALE
+  const allowOffCanvasPosition = slide.device.allowOffCanvasPosition ?? false
+  const horizontalPosition =
+    typeof slide.device.horizontalPosition === 'number'
+      ? slide.device.horizontalPosition
+      : DEFAULT_DEVICE_HORIZONTAL_POSITION
+  const verticalPosition =
+    typeof slide.device.verticalPosition === 'number'
+      ? slide.device.verticalPosition
+      : DEFAULT_DEVICE_VERTICAL_POSITION
+  const effectiveHorizontalPosition = allowOffCanvasPosition
+    ? Math.max(-30, Math.min(130, horizontalPosition))
+    : DEFAULT_DEVICE_HORIZONTAL_POSITION
+  const effectiveVerticalPosition = allowOffCanvasPosition
+    ? Math.max(-30, Math.min(120, verticalPosition))
+    : Math.max(0, Math.min(80, verticalPosition))
+  const headlineVerticalPosition =
+    typeof slide.text.verticalPosition === 'number' ? Math.max(5, Math.min(90, slide.text.verticalPosition)) : 12
+  const headlineHorizontalOffset = allowOffCanvasPosition
+    ? typeof slide.text.horizontalOffset === 'number'
+      ? Math.max(-30, Math.min(30, slide.text.horizontalOffset))
+      : DEFAULT_HEADLINE_HORIZONTAL_OFFSET
+    : DEFAULT_HEADLINE_HORIZONTAL_OFFSET
+  const headlineHorizontalShiftPx = displayWidth * (headlineHorizontalOffset / 100)
 
-  // Device vertical position - default to 35% if not set
-  const deviceVerticalPosition = slide.device.verticalPosition ?? 35
-  const deviceTop = displayHeight * (deviceVerticalPosition / 100)
+  const deviceDisplayWidth = displayWidth * (frameScale / 100)
+  const deviceDisplayHeight = deviceDisplayWidth * (deviceSpec.frameHeight / deviceSpec.frameWidth)
+  const deviceLeft = (displayWidth * (effectiveHorizontalPosition / 100)) - (deviceDisplayWidth / 2)
+  const deviceTop = displayHeight * (effectiveVerticalPosition / 100)
 
   return (
     <div
@@ -124,8 +152,8 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
       <div
         className="absolute left-0 right-0"
         style={{
-          top: `${slide.text.verticalPosition}%`,
-          transform: 'translateY(-50%)',
+          top: `${headlineVerticalPosition}%`,
+          transform: `translate(${headlineHorizontalShiftPx}px, -50%)`,
           padding: `0 ${65 * scale}px`,
           color: textColor,
           textAlign: slide.text.align,
