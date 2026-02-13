@@ -1,10 +1,10 @@
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { snapdom } from '@zumer/snapdom'
+import type { ScreenshotTarget } from '../types'
 import {
-  SCREENSHOT_WIDTH,
-  SCREENSHOT_HEIGHT,
-  isAcceptedIPhoneScreenshotSize,
+  getDefaultExportSize,
+  isAcceptedScreenshotSize,
 } from '../presets/exportSpecs'
 
 /**
@@ -12,14 +12,16 @@ import {
  * Uses snapdom which renders via SVG foreignObject — preserves box-shadow,
  * 3D transforms, filters, and all CSS exactly as the browser displays them.
  */
-export async function captureSlideAsBlob(element: HTMLElement): Promise<Blob> {
-  if (!isAcceptedIPhoneScreenshotSize(SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT)) {
-    throw new Error(`Invalid screenshot size: ${SCREENSHOT_WIDTH}x${SCREENSHOT_HEIGHT}`)
+export async function captureSlideAsBlob(element: HTMLElement, screenshotTarget: ScreenshotTarget): Promise<Blob> {
+  const { width, height } = getDefaultExportSize(screenshotTarget)
+
+  if (!isAcceptedScreenshotSize(screenshotTarget, width, height)) {
+    throw new Error(`Invalid screenshot size: ${width}x${height}`)
   }
 
   const result = await snapdom(element, {
-    width: SCREENSHOT_WIDTH,
-    height: SCREENSHOT_HEIGHT,
+    width,
+    height,
     outerShadows: true,
     outerTransforms: true,
     embedFonts: true,
@@ -31,8 +33,12 @@ export async function captureSlideAsBlob(element: HTMLElement): Promise<Blob> {
 /**
  * Capture a slide element and download as PNG.
  */
-export async function captureSlideAsPNG(element: HTMLElement, filename: string): Promise<void> {
-  const blob = await captureSlideAsBlob(element)
+export async function captureSlideAsPNG(
+  element: HTMLElement,
+  filename: string,
+  screenshotTarget: ScreenshotTarget
+): Promise<void> {
+  const blob = await captureSlideAsBlob(element, screenshotTarget)
   saveAs(blob, filename)
 }
 

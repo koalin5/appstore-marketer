@@ -21,11 +21,11 @@ No test framework is configured.
 
 **Entry point**: `src/main.tsx` → `App.tsx` → `Editor` component.
 
-**Core data model** (`src/types/index.ts`): A `Project` contains an array of `Slide`s. Each slide has a `BackgroundConfig`, `TextConfig`, `DeviceConfig`, and an optional screenshot reference (stored as an IndexedDB key).
+**Core data model** (`src/types/index.ts`): A `Project` contains an array of `Slide`s plus a `screenshotTarget` (`iphone-6_9` or `ipad-13`). Each slide has a `BackgroundConfig`, `TextConfig`, `DeviceConfig`, and an optional screenshot reference (stored as an IndexedDB key).
 
 **Component hierarchy**:
 - **Editor** (`src/components/Editor.tsx`): Central state manager. Holds the slides array, current slide index, and all editing state. Auto-saves to localStorage every 500ms. Renders the left slide thumbnails panel, center canvas preview, and right-side editing controls.
-- **Canvas** (`src/components/Canvas.tsx`): Renders a slide at fixed 1320x2868px (App Store-compliant iPhone 6.9" resolution). Composes background, text overlay, and device mockup. This is the element captured for export.
+- **Canvas** (`src/components/Canvas.tsx`): Renders a slide at the active App Store target resolution (`1320x2868` for iPhone 6.9", `2064x2752` for iPad 13"). Composes background, text overlay, and device mockup. This is the element captured for export.
 - **DeviceMockup** (`src/components/DeviceMockup.tsx`): Renders the iPhone frame with CSS 3D perspective transforms. Places the user's screenshot inside the device bezel.
 - **ExportPanel** (`src/components/ExportPanel.tsx`): Single-slide PNG export via snapdom, batch ZIP export via JSZip + FileSaver.
 - **BackgroundPicker** / **FontPicker**: UI controls for background and font selection.
@@ -38,7 +38,7 @@ No test framework is configured.
 
 ## Key Constraints
 
-- Canvas always renders at 1320x2868px regardless of selected device model — this is an App Store-compliant iPhone 6.9" screenshot size.
+- Canvas renders at the current project's `screenshotTarget` dimensions regardless of selected device model.
 - Thumbnails in the slide panel render at 0.18 scale using CSS transforms.
 - TypeScript strict mode is enabled with `noUnusedLocals` and `noUnusedParameters`.
 - ESLint enforces `--max-warnings 0` — any warning fails the lint.

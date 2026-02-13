@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Project, Slide, TextConfig, BackgroundConfig, DeviceConfig } from '../types'
+import type {
+  Project,
+  Slide,
+  TextConfig,
+  BackgroundConfig,
+  DeviceConfig,
+  ScreenshotTarget,
+} from '../types'
 import Canvas from './Canvas'
 import BackgroundPicker from './BackgroundPicker'
 import FontPicker from './FontPicker'
@@ -16,7 +23,8 @@ import {
 } from '../utils/storage'
 import { captureSlideAsPNG, captureSlideAsBlob, exportBlobsAsZIP } from '../utils/export'
 import { DEVICE_MODELS } from '../presets/colors'
-import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
+import { SCREENSHOT_TARGET_SPECS, getScreenshotTargetSpec } from '../presets/exportSpecs'
+import { validateScreenshotBlob } from '../utils/screenshotValidation'
 
 const DEFAULT_SUB_CAPTION_SIZE = 42
 const DEFAULT_SUB_CAPTION_SPACING = 12
@@ -24,11 +32,25 @@ const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
 const DEFAULT_DEVICE_VERTICAL_POSITION = 35
 const DEFAULT_DEVICE_FRAME_SCALE = 55
 const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
+const DEFAULT_IPHONE_DEVICE_MODEL: DeviceConfig['model'] = 'iphone-17-pro'
+const ALLOWED_IPHONE_DEVICE_MODELS: DeviceConfig['model'][] = ['iphone-17-pro', 'iphone-16-pro']
+const IPHONE_DEVICE_MODELS = DEVICE_MODELS.filter((model) => ALLOWED_IPHONE_DEVICE_MODELS.includes(model.id))
+
+function normalizeIPhoneDeviceModel(model: DeviceConfig['model']): DeviceConfig['model'] {
+  if (ALLOWED_IPHONE_DEVICE_MODELS.includes(model)) {
+    return model
+  }
+  if (model === 'iphone-16-pro-max') {
+    return 'iphone-16-pro'
+  }
+  return DEFAULT_IPHONE_DEVICE_MODEL
+}
 
 export default function Editor() {
   const [project, setProject] = useState<Project | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
+  const [screenshotValidationMessage, setScreenshotValidationMessage] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
@@ -126,6 +148,71 @@ export default function Editor() {
     [project, currentSlideIndex, updateSlide]
   )
 
+  const handleScreenshotTargetChange = useCallback(
+    (target: ScreenshotTarget) => {
+      if (!project || project.screenshotTarget === target) return
+
+      const updatedProject = { ...project, screenshotTarget: target }
+      setProject(updatedProject)
+      autoSave(updatedProject)
+    },
+    [project, autoSave]
+  )
+
+  const currentSlideSnapshot = project?.slides[currentSlideIndex]
+  const currentScreenshotTarget = project?.screenshotTarget ?? null
+  const currentSlideDeviceModel = currentSlideSnapshot?.device.model ?? null
+  const currentSlideScreenshotRef = currentSlideSnapshot?.screenshotRef ?? null
+  const currentSlideAllowMismatchedScreenshot = currentSlideSnapshot?.allowMismatchedScreenshot ?? false
+
+  useEffect(() => {
+    if (!project || project.screenshotTarget !== 'iphone-6_9') return
+
+    const model = project.slides[currentSlideIndex]?.device.model
+    if (!model) return
+
+    const normalizedModel = normalizeIPhoneDeviceModel(model)
+    if (normalizedModel !== model) {
+      handleDeviceChange({ model: normalizedModel })
+    }
+  }, [project, currentSlideIndex, handleDeviceChange])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function validateCurrentScreenshot() {
+      if (!currentScreenshotTarget || !currentSlideDeviceModel || !currentSlideScreenshotRef) {
+        setScreenshotValidationMessage(null)
+        return
+      }
+
+      const blob = await getScreenshot(currentSlideScreenshotRef)
+      if (!blob) {
+        if (!cancelled) {
+          setScreenshotValidationMessage(null)
+        }
+        return
+      }
+
+      try {
+        const validation = await validateScreenshotBlob(blob, currentScreenshotTarget, currentSlideDeviceModel)
+        if (cancelled) return
+        setScreenshotValidationMessage(validation.isCompatible ? null : validation.message)
+      } catch (error) {
+        console.error('Failed to validate screenshot dimensions:', error)
+        if (!cancelled) {
+          setScreenshotValidationMessage('Unable to read screenshot dimensions. Please upload another screenshot.')
+        }
+      }
+    }
+
+    validateCurrentScreenshot()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentScreenshotTarget, currentSlideDeviceModel, currentSlideScreenshotRef])
+
   const handleScreenshotUpload = useCallback(
     async (file: File) => {
       if (!project) return
@@ -133,7 +220,7 @@ export default function Editor() {
       const screenshotRef = crypto.randomUUID()
       await saveScreenshot(screenshotRef, file)
 
-      updateSlide({ screenshotRef })
+      updateSlide({ screenshotRef, allowMismatchedScreenshot: false })
     },
     [project, updateSlide]
   )
@@ -159,7 +246,7 @@ export default function Editor() {
         subCaptionSpacing: DEFAULT_SUB_CAPTION_SPACING,
       },
       device: {
-        model: 'iphone-17-pro-max',
+        model: DEFAULT_IPHONE_DEVICE_MODEL,
         angle: 'straight',
         verticalPosition: DEFAULT_DEVICE_VERTICAL_POSITION,
         frameScale: DEFAULT_DEVICE_FRAME_SCALE,
@@ -167,6 +254,7 @@ export default function Editor() {
         allowOffCanvasPosition: false,
       },
       screenshotRef: null,
+      allowMismatchedScreenshot: false,
     }
 
     const updatedProject = {
@@ -252,20 +340,22 @@ export default function Editor() {
 
   // Export: capture visible canvas elements directly via snapdom
   const handleExportSingle = useCallback(async () => {
+    if (!project) return
+
     const containers = containerRef.current?.querySelectorAll('[data-canvas-container]')
     const el = containers?.[currentSlideIndex] as HTMLElement | null
     if (!el) return
 
     setIsExporting(true)
     try {
-      await captureSlideAsPNG(el, `screenshot-${currentSlideIndex + 1}.png`)
+      await captureSlideAsPNG(el, `screenshot-${currentSlideIndex + 1}.png`, project.screenshotTarget)
     } catch (error) {
       console.error('Export failed:', error)
       alert('Export failed. Please try again.')
     } finally {
       setIsExporting(false)
     }
-  }, [currentSlideIndex])
+  }, [currentSlideIndex, project])
 
   const handleExportAll = useCallback(async () => {
     if (!project) return
@@ -276,7 +366,7 @@ export default function Editor() {
     try {
       const blobs: Blob[] = []
       for (let i = 0; i < containers.length; i++) {
-        const blob = await captureSlideAsBlob(containers[i] as HTMLElement)
+        const blob = await captureSlideAsBlob(containers[i] as HTMLElement, project.screenshotTarget)
         blobs.push(blob)
       }
       await exportBlobsAsZIP(blobs)
@@ -297,6 +387,10 @@ export default function Editor() {
   }
 
   const currentSlide = project.slides[currentSlideIndex]
+  const screenshotTargetSpec = getScreenshotTargetSpec(project.screenshotTarget)
+  const currentIPhoneModel = normalizeIPhoneDeviceModel(currentSlide.device.model)
+  const screenshotWidth = screenshotTargetSpec.defaultSize.width
+  const screenshotHeight = screenshotTargetSpec.defaultSize.height
   const textSize = typeof currentSlide.text.size === 'number' ? currentSlide.text.size : 96
   const showSubCaption = currentSlide.text.showSubCaption ?? false
   const subCaptionSize =
@@ -338,19 +432,32 @@ export default function Editor() {
               <h1 className="text-lg font-semibold text-gray-900">Screenshot Studio</h1>
             </div>
             <select
-              value={currentSlide.device.model}
-              onChange={(e) => handleDeviceChange({ model: e.target.value as DeviceConfig['model'] })}
+              value={project.screenshotTarget}
+              onChange={(e) => handleScreenshotTargetChange(e.target.value as ScreenshotTarget)}
               className="px-3 py-1.5 bg-gray-100 border-0 rounded-lg text-sm text-gray-700"
             >
-              {DEVICE_MODELS.map((model) => (
-                <option key={model.id} value={model.id}>{model.name}</option>
+              {SCREENSHOT_TARGET_SPECS.map((target) => (
+                <option key={target.id} value={target.id}>
+                  {target.name} ({target.defaultSize.width} × {target.defaultSize.height})
+                </option>
               ))}
             </select>
+            {project.screenshotTarget === 'iphone-6_9' && (
+              <select
+                value={currentIPhoneModel}
+                onChange={(e) => handleDeviceChange({ model: e.target.value as DeviceConfig['model'] })}
+                className="px-3 py-1.5 bg-gray-100 border-0 rounded-lg text-sm text-gray-700"
+              >
+                {IPHONE_DEVICE_MODELS.map((model) => (
+                  <option key={model.id} value={model.id}>{model.name}</option>
+                ))}
+              </select>
+            )}
           </div>
           
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
-              {project.slides.length} screenshot{project.slides.length !== 1 ? 's' : ''} • {SCREENSHOT_WIDTH} × {SCREENSHOT_HEIGHT}px
+              {project.slides.length} screenshot{project.slides.length !== 1 ? 's' : ''} • {screenshotWidth} × {screenshotHeight}px
             </span>
             <ExportPanel
               slideCount={project.slides.length}
@@ -421,7 +528,7 @@ export default function Editor() {
                   }`}
                   onClick={() => setCurrentSlideIndex(index)}
                 >
-                  <Canvas slide={slide} scale={0.18} />
+                  <Canvas slide={slide} screenshotTarget={project.screenshotTarget} scale={0.18} />
                 </div>
               </div>
             ))}
@@ -430,7 +537,7 @@ export default function Editor() {
             <button
               onClick={handleSlideAdd}
               className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-colors"
-              style={{ width: SCREENSHOT_WIDTH * 0.18, height: SCREENSHOT_HEIGHT * 0.18 }}
+              style={{ width: screenshotWidth * 0.18, height: screenshotHeight * 0.18 }}
             >
               <span className="text-3xl text-gray-400 mb-1">+</span>
             </button>
@@ -491,6 +598,23 @@ export default function Editor() {
                   </div>
                 )}
               </div>
+              {screenshotValidationMessage && (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 mb-0.5">
+                    Screenshot Size Mismatch
+                  </div>
+                  <div className="text-xs leading-4 text-amber-700">{screenshotValidationMessage}</div>
+                  <label className="mt-2 flex items-center gap-2 text-xs text-amber-800 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={currentSlideAllowMismatchedScreenshot}
+                      onChange={(e) => updateSlide({ allowMismatchedScreenshot: e.target.checked })}
+                      className="h-4 w-4 rounded border-amber-300 accent-amber-600"
+                    />
+                    Use this screenshot anyway
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* ── Background ── */}

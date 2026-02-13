@@ -1,13 +1,14 @@
 import { useRef, useEffect, useState } from 'react'
-import type { Slide } from '../types'
+import type { Slide, ScreenshotTarget } from '../types'
 import { FONT_OPTIONS } from '../presets/colors'
-import { DEVICE_SPECS } from '../presets/deviceSpecs'
-import { SCREENSHOT_HEIGHT, SCREENSHOT_WIDTH } from '../presets/exportSpecs'
+import { getActiveDeviceSpec } from '../presets/deviceSpecs'
+import { DEFAULT_SCREENSHOT_TARGET, getDefaultExportSize } from '../presets/exportSpecs'
 import { getBackgroundImage } from '../utils/storage'
 import DeviceMockup from './DeviceMockup'
 
 interface CanvasProps {
   slide: Slide
+  screenshotTarget?: ScreenshotTarget
   scale?: number
 }
 
@@ -16,13 +17,14 @@ const DEFAULT_DEVICE_FRAME_SCALE = 55
 const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
 const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
 
-export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
+export default function Canvas({ slide, screenshotTarget = DEFAULT_SCREENSHOT_TARGET, scale = 0.18 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bgImageUrl, setBgImageUrl] = useState<string | null>(null)
 
   // Canvas size is always fixed to App Store requirements
-  const nativeWidth = SCREENSHOT_WIDTH
-  const nativeHeight = SCREENSHOT_HEIGHT
+  const exportSize = getDefaultExportSize(screenshotTarget)
+  const nativeWidth = exportSize.width
+  const nativeHeight = exportSize.height
 
   // Calculate display dimensions
   const displayWidth = nativeWidth * scale
@@ -95,7 +97,7 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
     FONT_OPTIONS.find((f) => f.id === (slide.text.subCaptionFont ?? slide.text.font))?.family || fontFamily
 
   // Device mockup sizing — use frame image aspect ratio
-  const deviceSpec = DEVICE_SPECS[slide.device.model]
+  const deviceSpec = getActiveDeviceSpec(screenshotTarget, slide.device.model)
   const frameScale =
     typeof slide.device.frameScale === 'number' ? Math.max(40, Math.min(80, slide.device.frameScale)) : DEFAULT_DEVICE_FRAME_SCALE
   const allowOffCanvasPosition = slide.device.allowOffCanvasPosition ?? false
@@ -206,7 +208,9 @@ export default function Canvas({ slide, scale = 0.18 }: CanvasProps) {
       >
         <DeviceMockup
           device={slide.device}
+          screenshotTarget={screenshotTarget}
           screenshotRef={slide.screenshotRef}
+          allowMismatchedScreenshot={slide.allowMismatchedScreenshot ?? false}
           width={deviceDisplayWidth}
           height={deviceDisplayHeight}
         />

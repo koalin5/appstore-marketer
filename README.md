@@ -9,6 +9,7 @@ A web-based tool for creating polished App Store screenshots for iOS apps. Desig
 - **Backgrounds**: Solid colors, gradients, or custom images with blur
 - **Screenshot Import**: Drag-and-drop or file picker with perspective transforms for tilted angles
 - **Multi-Slide Management**: Create, duplicate, delete, and reorder slides
+- **Targeted App Store Export**: Toggle between iPhone 6.9" and iPad 13" export presets
 - **High-Quality Export**: Export individual slides or batch export as ZIP at exact App Store dimensions
 - **Auto-Save**: Client-side persistence with localStorage + IndexedDB
 
@@ -45,13 +46,20 @@ npm run build
 
 ## App Store Dimensions
 
-The tool exports iPhone screenshots in an App Store-compliant 6.9" size:
-- **Default export**: 1320 × 2868 pixels
+The tool supports two App Store screenshot targets:
 
-Apple currently accepts these 6.9" portrait sizes:
-- 1320 × 2868
-- 1290 × 2796
-- 1260 × 2736
+### iPhone 6.9"
+- **Default export**: 1320 × 2868 pixels
+- **Accepted portrait sizes**:
+  - 1320 × 2868
+  - 1290 × 2796
+  - 1260 × 2736
+
+### iPad 13"
+- **Default export**: 2064 × 2752 pixels
+- **Accepted portrait sizes**:
+  - 2064 × 2752
+  - 2048 × 2732
 
 ## Tech Stack
 

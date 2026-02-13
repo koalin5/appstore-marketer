@@ -3,6 +3,7 @@ export interface Project {
   name: string
   createdAt: number
   updatedAt: number
+  screenshotTarget: ScreenshotTarget
   slides: Slide[]
 }
 
@@ -12,6 +13,7 @@ export interface Slide {
   text: TextConfig
   device: DeviceConfig
   screenshotRef: string | null
+  allowMismatchedScreenshot: boolean
 }
 
 export type BackgroundType = 'solid' | 'gradient' | 'image'
@@ -60,6 +62,8 @@ export interface DeviceConfig {
   horizontalPosition: number // center point as percentage of canvas width
   allowOffCanvasPosition: boolean // unlocks extended positioning range
 }
+
+export type ScreenshotTarget = 'iphone-6_9' | 'ipad-13'
 
 export type DeviceModel = 'iphone-17-pro-max' | 'iphone-17-pro' | 'iphone-16-pro-max' | 'iphone-16-pro'
 

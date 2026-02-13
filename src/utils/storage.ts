@@ -1,5 +1,6 @@
 import { get, set, del } from 'idb-keyval'
 import type { Project } from '../types'
+import { DEFAULT_SCREENSHOT_TARGET, isSupportedScreenshotTarget } from '../presets/exportSpecs'
 
 const PROJECTS_KEY = 'ios-screenshot-projects'
 const CURRENT_PROJECT_KEY = 'ios-screenshot-current-project'
@@ -11,12 +12,29 @@ const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
 const DEFAULT_DEVICE_VERTICAL_POSITION = 35
 const DEFAULT_DEVICE_FRAME_SCALE = 55
 const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
+const DEFAULT_IPHONE_DEVICE_MODEL = 'iphone-17-pro' as const
+
+function normalizeDeviceModel(model: Project['slides'][number]['device']['model']): Project['slides'][number]['device']['model'] {
+  if (model === 'iphone-16-pro-max') {
+    return 'iphone-16-pro'
+  }
+  if (model === 'iphone-17-pro-max') {
+    return 'iphone-17-pro'
+  }
+  return model
+}
 
 function withSlideDefaults(project: Project): Project {
+  const screenshotTarget = isSupportedScreenshotTarget(project.screenshotTarget)
+    ? project.screenshotTarget
+    : DEFAULT_SCREENSHOT_TARGET
+
   return {
     ...project,
+    screenshotTarget,
     slides: project.slides.map((slide) => ({
       ...slide,
+      allowMismatchedScreenshot: slide.allowMismatchedScreenshot ?? false,
       text: {
         ...slide.text,
         horizontalOffset:
@@ -37,6 +55,7 @@ function withSlideDefaults(project: Project): Project {
       },
       device: {
         ...slide.device,
+        model: normalizeDeviceModel(slide.device.model),
         verticalPosition:
           typeof slide.device.verticalPosition === 'number'
             ? slide.device.verticalPosition
@@ -180,6 +199,7 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
     name,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    screenshotTarget: DEFAULT_SCREENSHOT_TARGET,
     slides: [
       {
         id: crypto.randomUUID(),
@@ -202,7 +222,7 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
           subCaptionSpacing: DEFAULT_SUB_CAPTION_SPACING,
         },
         device: {
-          model: 'iphone-17-pro-max',
+          model: DEFAULT_IPHONE_DEVICE_MODEL,
           angle: 'straight',
           verticalPosition: DEFAULT_DEVICE_VERTICAL_POSITION,
           frameScale: DEFAULT_DEVICE_FRAME_SCALE,
@@ -210,6 +230,7 @@ export function createNewProject(name: string = 'Untitled Project'): Project {
           allowOffCanvasPosition: false,
         },
         screenshotRef: null,
+        allowMismatchedScreenshot: false,
       },
     ],
   }
