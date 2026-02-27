@@ -6,6 +6,7 @@ const PROJECTS_KEY = 'ios-screenshot-projects'
 const CURRENT_PROJECT_KEY = 'ios-screenshot-current-project'
 const SCREENSHOT_PREFIX = 'screenshot-'
 const BG_IMAGE_PREFIX = 'bg-image-'
+const APP_ICON_PREFIX = 'app-icon-'
 const DEFAULT_SUB_CAPTION_SIZE = 42
 const DEFAULT_SUB_CAPTION_SPACING = 12
 const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
@@ -158,6 +159,10 @@ export async function deleteProject(id: string): Promise<void> {
       ...Array.from(screenshotRefs).map((ref) => deleteAsset(SCREENSHOT_PREFIX, ref)),
       ...Array.from(backgroundImageRefs).map((ref) => deleteAsset(BG_IMAGE_PREFIX, ref)),
     ])
+
+    if (project.appIcon) {
+      await deleteAppIcon(project.id)
+    }
   }
 }
 
@@ -191,6 +196,18 @@ export async function getBackgroundImage(slideId: string): Promise<Blob | undefi
 
 export async function deleteBackgroundImage(slideId: string): Promise<void> {
   await deleteAsset(BG_IMAGE_PREFIX, slideId)
+}
+
+export async function saveAppIcon(projectId: string, blob: Blob): Promise<void> {
+  await set(toAssetKey(APP_ICON_PREFIX, projectId), blob)
+}
+
+export async function getAppIcon(projectId: string): Promise<Blob | undefined> {
+  return await readAssetWithLegacyFallback(APP_ICON_PREFIX, projectId)
+}
+
+export async function deleteAppIcon(projectId: string): Promise<void> {
+  await deleteAsset(APP_ICON_PREFIX, projectId)
 }
 
 export function createNewProject(name: string = 'Untitled Project'): Project {

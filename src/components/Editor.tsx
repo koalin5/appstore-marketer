@@ -12,9 +12,7 @@ import BackgroundPicker from './BackgroundPicker'
 import FontPicker from './FontPicker'
 import ExportPanel from './ExportPanel'
 import {
-  createNewProject,
   saveProject,
-  getCurrentProjectId,
   getProject,
   saveScreenshot,
   getScreenshot,
@@ -46,37 +44,42 @@ function normalizeIPhoneDeviceModel(model: DeviceConfig['model']): DeviceConfig[
   return DEFAULT_IPHONE_DEVICE_MODEL
 }
 
-export default function Editor() {
+interface EditorProps {
+  projectId: string
+  onProjectUpdated?: (project: Project) => void
+}
+
+export default function Editor({ projectId, onProjectUpdated }: EditorProps) {
   const [project, setProject] = useState<Project | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
   const [screenshotValidationMessage, setScreenshotValidationMessage] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const projectRef = useRef<Project | null>(null)
 
   useEffect(() => {
-    async function loadInitialProject() {
-      const currentId = await getCurrentProjectId()
-      if (currentId) {
-        const loaded = await getProject(currentId)
-        if (loaded) {
-          setProject(loaded)
-          return
-        }
+    projectRef.current = project
+  }, [project])
+
+  useEffect(() => {
+    async function loadProject() {
+      const loaded = await getProject(projectId)
+      if (loaded) {
+        setProject(loaded)
       }
-
-      const newProject = createNewProject()
-      setProject(newProject)
-      await saveProject(newProject)
     }
+    loadProject()
+  }, [projectId])
 
-    loadInitialProject()
-  }, [])
-
+  // Flush pending save on unmount (project switch)
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
+      }
+      if (projectRef.current) {
+        saveProject({ ...projectRef.current, updatedAt: Date.now() })
       }
     }
   }, [])
@@ -89,8 +92,9 @@ export default function Editor() {
     saveTimeoutRef.current = setTimeout(async () => {
       updatedProject.updatedAt = Date.now()
       await saveProject(updatedProject)
+      onProjectUpdated?.(updatedProject)
     }, 500)
-  }, [])
+  }, [onProjectUpdated])
 
   const updateSlide = useCallback(
     (updates: Partial<Slide>) => {
@@ -422,7 +426,7 @@ export default function Editor() {
       : DEFAULT_HEADLINE_HORIZONTAL_OFFSET
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
