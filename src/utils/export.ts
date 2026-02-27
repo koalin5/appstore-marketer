@@ -53,3 +53,21 @@ export async function exportBlobsAsZIP(blobs: Blob[]): Promise<void> {
   const zipBlob = await zip.generateAsync({ type: 'blob' })
   saveAs(zipBlob, 'screenshots.zip')
 }
+
+/**
+ * Export slide blobs organized by locale folders.
+ * Structure: /en-US/screenshot-1.png, /es-MX/screenshot-1.png, etc.
+ */
+export async function exportBlobsByLocaleAsZIP(blobsByLocale: Record<string, Blob[]>): Promise<void> {
+  const zip = new JSZip()
+
+  for (const [locale, blobs] of Object.entries(blobsByLocale)) {
+    const folder = zip.folder(locale)!
+    for (let i = 0; i < blobs.length; i++) {
+      folder.file(`screenshot-${i + 1}.png`, blobs[i])
+    }
+  }
+
+  const zipBlob = await zip.generateAsync({ type: 'blob' })
+  saveAs(zipBlob, 'screenshots-localized.zip')
+}

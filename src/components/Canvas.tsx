@@ -4,12 +4,15 @@ import { FONT_OPTIONS } from '../presets/colors'
 import { getActiveDeviceSpec } from '../presets/deviceSpecs'
 import { DEFAULT_SCREENSHOT_TARGET, getDefaultExportSize } from '../presets/exportSpecs'
 import { getBackgroundImage } from '../utils/storage'
+import { resolveLocalizedText } from '../utils/locale'
 import DeviceMockup from './DeviceMockup'
 
 interface CanvasProps {
   slide: Slide
   screenshotTarget?: ScreenshotTarget
   scale?: number
+  locale?: string
+  defaultLocale?: string
 }
 
 const DEFAULT_DEVICE_VERTICAL_POSITION = 35
@@ -17,7 +20,7 @@ const DEFAULT_DEVICE_FRAME_SCALE = 55
 const DEFAULT_DEVICE_HORIZONTAL_POSITION = 50
 const DEFAULT_HEADLINE_HORIZONTAL_OFFSET = 0
 
-export default function Canvas({ slide, screenshotTarget = DEFAULT_SCREENSHOT_TARGET, scale = 0.18 }: CanvasProps) {
+export default function Canvas({ slide, screenshotTarget = DEFAULT_SCREENSHOT_TARGET, scale = 0.18, locale, defaultLocale }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bgImageUrl, setBgImageUrl] = useState<string | null>(null)
 
@@ -81,12 +84,15 @@ export default function Canvas({ slide, screenshotTarget = DEFAULT_SCREENSHOT_TA
     return { backgroundColor: '#FFFFFF' }
   }
 
+  // Resolve locale-specific text
+  const resolvedText = resolveLocalizedText(slide, locale, defaultLocale)
+
   // Text styling (scaled) - now uses numeric size directly
   const textSize = typeof slide.text.size === 'number' ? slide.text.size : 96
   const fontSize = textSize * scale
   const fontFamily = FONT_OPTIONS.find((f) => f.id === slide.text.font)?.family || 'Inter, sans-serif'
   const textColor = slide.text.color === 'white' ? '#FFFFFF' : '#000000'
-  const shouldShowSubCaption = Boolean(slide.text.showSubCaption && slide.text.subCaption.trim())
+  const shouldShowSubCaption = Boolean(slide.text.showSubCaption && resolvedText.subCaption.trim())
   const subCaptionScale =
     typeof slide.text.subCaptionSize === 'number' ? Math.max(25, Math.min(65, slide.text.subCaptionSize)) : 42
   const subCaptionSpacingScale =
@@ -175,7 +181,7 @@ export default function Canvas({ slide, screenshotTarget = DEFAULT_SCREENSHOT_TA
             wordBreak: 'break-word',
           }}
         >
-          {slide.text.content || 'Your headline here'}
+          {resolvedText.content || 'Your headline here'}
         </div>
         {shouldShowSubCaption && (
           <div
@@ -190,7 +196,7 @@ export default function Canvas({ slide, screenshotTarget = DEFAULT_SCREENSHOT_TA
               wordBreak: 'break-word',
             }}
           >
-            {slide.text.subCaption}
+            {resolvedText.subCaption}
           </div>
         )}
       </div>

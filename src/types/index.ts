@@ -1,3 +1,9 @@
+/** Text fields that vary per locale — everything else (font, size, etc.) is shared */
+export interface LocalizedTextContent {
+  content: string
+  subCaption: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -6,6 +12,8 @@ export interface Project {
   updatedAt: number
   screenshotTarget: ScreenshotTarget
   slides: Slide[]
+  locales?: string[]
+  defaultLocale?: string
 }
 
 export interface Slide {
@@ -15,6 +23,7 @@ export interface Slide {
   device: DeviceConfig
   screenshotRef: string | null
   allowMismatchedScreenshot: boolean
+  localizedText?: Record<string, LocalizedTextContent>
 }
 
 export type BackgroundType = 'solid' | 'gradient' | 'image'

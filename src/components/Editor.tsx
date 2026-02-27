@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 import type {
   Project,
   Slide,
@@ -11,6 +12,7 @@ import Canvas from './Canvas'
 import BackgroundPicker from './BackgroundPicker'
 import FontPicker from './FontPicker'
 import ExportPanel from './ExportPanel'
+import LocaleManager from './LocaleManager'
 import {
   saveProject,
   getProject,
@@ -19,10 +21,11 @@ import {
   deleteScreenshot,
   deleteBackgroundImage,
 } from '../utils/storage'
-import { captureSlideAsPNG, captureSlideAsBlob, exportBlobsAsZIP } from '../utils/export'
+import { captureSlideAsPNG, captureSlideAsBlob, exportBlobsAsZIP, exportBlobsByLocaleAsZIP } from '../utils/export'
 import { DEVICE_MODELS } from '../presets/colors'
 import { SCREENSHOT_TARGET_SPECS, getScreenshotTargetSpec } from '../presets/exportSpecs'
 import { validateScreenshotBlob } from '../utils/screenshotValidation'
+import { resolveLocalizedText } from '../utils/locale'
 
 const DEFAULT_SUB_CAPTION_SIZE = 42
 const DEFAULT_SUB_CAPTION_SPACING = 12
@@ -56,6 +59,8 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
   const [screenshotValidationMessage, setScreenshotValidationMessage] = useState<string | null>(null)
+  const [currentLocale, setCurrentLocale] = useState<string | undefined>(undefined)
+  const [showLocaleManager, setShowLocaleManager] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
   const projectRef = useRef<Project | null>(null)
@@ -69,6 +74,7 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
       const loaded = await getProject(projectId)
       if (loaded) {
         setProject(loaded)
+        setCurrentLocale(loaded.defaultLocale)
       }
     }
     loadProject()
@@ -125,13 +131,41 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
   )
 
   const handleTextChange = useCallback(
-    (text: Partial<TextConfig>) => {
+    (updates: Partial<TextConfig>) => {
       if (!project) return
-      updateSlide({
-        text: { ...project.slides[currentSlideIndex].text, ...text },
-      })
+      const slide = project.slides[currentSlideIndex]
+      const hasLocales = currentLocale && project.locales && project.locales.length > 0
+
+      // Separate translatable fields from styling fields
+      const { content, subCaption, ...styleUpdates } = updates
+      const hasTranslatableChange = content !== undefined || subCaption !== undefined
+
+      if (hasTranslatableChange && hasLocales && currentLocale) {
+        // Update localizedText for the current locale
+        const currentEntry = slide.localizedText?.[currentLocale] ?? {
+          content: slide.text.content,
+          subCaption: slide.text.subCaption,
+        }
+        const newLocalizedText = {
+          ...slide.localizedText,
+          [currentLocale]: {
+            ...currentEntry,
+            ...(content !== undefined ? { content } : {}),
+            ...(subCaption !== undefined ? { subCaption } : {}),
+          },
+        }
+        updateSlide({
+          text: { ...slide.text, ...styleUpdates },
+          localizedText: newLocalizedText,
+        })
+      } else {
+        // Single-locale mode or style-only change
+        updateSlide({
+          text: { ...slide.text, ...updates },
+        })
+      }
     },
-    [project, currentSlideIndex, updateSlide]
+    [project, currentSlideIndex, currentLocale, updateSlide]
   )
 
   const handleBackgroundChange = useCallback(
@@ -173,6 +207,55 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
     },
     [project, autoSave]
   )
+
+  const handleAddLocale = useCallback((localeCode: string) => {
+    if (!project) return
+    const existingLocales = project.locales ?? []
+    if (existingLocales.includes(localeCode)) return
+
+    const isFirst = existingLocales.length === 0
+    const newLocales = [...existingLocales, localeCode]
+    const defaultLocale = project.defaultLocale ?? localeCode
+
+    const updatedSlides = project.slides.map(slide => ({
+      ...slide,
+      localizedText: isFirst
+        ? { ...slide.localizedText, [localeCode]: { content: slide.text.content, subCaption: slide.text.subCaption } }
+        : { ...slide.localizedText, [localeCode]: { content: '', subCaption: '' } },
+    }))
+
+    const updatedProject = { ...project, locales: newLocales, defaultLocale, slides: updatedSlides }
+    setProject(updatedProject)
+    setCurrentLocale(localeCode)
+    autoSave(updatedProject)
+  }, [project, autoSave])
+
+  const handleRemoveLocale = useCallback((localeCode: string) => {
+    if (!project || !project.locales) return
+
+    const newLocales = project.locales.filter(l => l !== localeCode)
+    const updatedSlides = project.slides.map(slide => {
+      if (!slide.localizedText) return slide
+      const { [localeCode]: _removed, ...rest } = slide.localizedText
+      void _removed
+      return { ...slide, localizedText: Object.keys(rest).length > 0 ? rest : undefined }
+    })
+
+    const updatedProject = newLocales.length === 0
+      ? { ...project, locales: undefined, defaultLocale: undefined, slides: updatedSlides }
+      : { ...project, locales: newLocales, defaultLocale: newLocales[0], slides: updatedSlides }
+
+    setProject(updatedProject)
+    setCurrentLocale(newLocales.length > 0 ? newLocales[0] : undefined)
+    autoSave(updatedProject)
+  }, [project, autoSave])
+
+  const handleSetDefaultLocale = useCallback((localeCode: string) => {
+    if (!project) return
+    const updatedProject = { ...project, defaultLocale: localeCode }
+    setProject(updatedProject)
+    autoSave(updatedProject)
+  }, [project, autoSave])
 
   const currentSlideSnapshot = project?.slides[currentSlideIndex]
   const currentScreenshotTarget = project?.screenshotTarget ?? null
@@ -243,6 +326,10 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
   const handleSlideAdd = useCallback(() => {
     if (!project) return
 
+    const localizedText = project.locales && project.locales.length > 0
+      ? Object.fromEntries(project.locales.map(l => [l, { content: '', subCaption: '' }]))
+      : undefined
+
     const newSlide: Slide = {
       id: crypto.randomUUID(),
       background: { type: 'solid', color: '#F0F4F8' },
@@ -270,6 +357,7 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
       },
       screenshotRef: null,
       allowMismatchedScreenshot: false,
+      localizedText,
     }
 
     const updatedProject = {
@@ -289,11 +377,14 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
       const sourceSlide = project.slides[index]
       const newSlideId = crypto.randomUUID()
       
-      // Duplicate the slide
+      // Duplicate the slide (deep-copy localizedText)
       const newSlide: Slide = {
         ...sourceSlide,
         id: newSlideId,
         screenshotRef: null, // Will copy below if exists
+        localizedText: sourceSlide.localizedText
+          ? Object.fromEntries(Object.entries(sourceSlide.localizedText).map(([k, v]) => [k, { ...v }]))
+          : undefined,
       }
 
       // Copy the screenshot if it exists
@@ -393,6 +484,40 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
     }
   }, [project])
 
+  const handleExportAllLocales = useCallback(async () => {
+    if (!project || !project.locales || project.locales.length === 0) return
+    const containers = containerRef.current?.querySelectorAll('[data-canvas-container]')
+    if (!containers || containers.length === 0) return
+
+    setIsExporting(true)
+    try {
+      const blobsByLocale: Record<string, Blob[]> = {}
+      const savedLocale = currentLocale
+
+      for (const locale of project.locales) {
+        flushSync(() => setCurrentLocale(locale))
+        // Small delay to let the DOM update after flushSync
+        await new Promise(resolve => setTimeout(resolve, 50))
+
+        const updatedContainers = containerRef.current?.querySelectorAll('[data-canvas-container]')
+        const blobs: Blob[] = []
+        for (let i = 0; i < (updatedContainers?.length ?? 0); i++) {
+          const blob = await captureSlideAsBlob(updatedContainers![i] as HTMLElement, project.screenshotTarget)
+          blobs.push(blob)
+        }
+        blobsByLocale[locale] = blobs
+      }
+
+      flushSync(() => setCurrentLocale(savedLocale))
+      await exportBlobsByLocaleAsZIP(blobsByLocale)
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Export failed. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }, [project, currentLocale])
+
   if (!project) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -402,6 +527,8 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
   }
 
   const currentSlide = project.slides[currentSlideIndex]
+  const localeCount = project.locales?.length ?? 0
+  const resolvedText = resolveLocalizedText(currentSlide, currentLocale, project.defaultLocale)
   const screenshotTargetSpec = getScreenshotTargetSpec(project.screenshotTarget)
   const currentIPhoneModel = normalizeIPhoneDeviceModel(currentSlide.device.model)
   const screenshotWidth = screenshotTargetSpec.defaultSize.width
@@ -477,8 +604,10 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
             <ExportPanel
               slideCount={project.slides.length}
               isExporting={isExporting}
+              localeCount={localeCount}
               onExportCurrent={handleExportSingle}
               onExportAll={handleExportAll}
+              onExportAllLocales={handleExportAllLocales}
             />
           </div>
         </div>
@@ -543,7 +672,7 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
                   }`}
                   onClick={() => setCurrentSlideIndex(index)}
                 >
-                  <Canvas slide={slide} screenshotTarget={project.screenshotTarget} scale={0.18} />
+                  <Canvas slide={slide} screenshotTarget={project.screenshotTarget} scale={0.18} locale={currentLocale} defaultLocale={project.defaultLocale} />
                 </div>
               </div>
             ))}
@@ -643,14 +772,42 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
 
             {/* ── Text ── */}
             <div className="bg-white rounded-xl p-4 space-y-4">
-              <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Text</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Text</h3>
+                <button
+                  onClick={() => setShowLocaleManager(true)}
+                  className="text-[11px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  {localeCount > 0
+                    ? `${localeCount} locale${localeCount !== 1 ? 's' : ''}`
+                    : '+ Localize'}
+                </button>
+              </div>
+
+              {localeCount > 1 && (
+                <div className="flex gap-1 flex-wrap">
+                  {project.locales!.map((locale) => (
+                    <button
+                      key={locale}
+                      onClick={() => setCurrentLocale(locale)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                        currentLocale === locale
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {locale}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <input
                 type="text"
-                value={currentSlide.text.content}
+                value={resolvedText.content}
                 onChange={(e) => handleTextChange({ content: e.target.value })}
                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
-                placeholder="Your headline here"
+                placeholder={currentLocale ? `Enter ${currentLocale} headline...` : 'Your headline here'}
               />
 
               <label className="flex items-center gap-2 text-sm text-gray-600 font-medium">
@@ -667,10 +824,10 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
                 <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
                   <input
                     type="text"
-                    value={currentSlide.text.subCaption ?? ''}
+                    value={resolvedText.subCaption}
                     onChange={(e) => handleTextChange({ subCaption: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
-                    placeholder="Add context under the headline"
+                    placeholder={currentLocale ? `Enter ${currentLocale} sub-caption...` : 'Add context under the headline'}
                   />
 
                   <FontPicker
@@ -947,6 +1104,16 @@ export default function Editor({ projectId, projectName, projectAppIcon, onProje
         </div>
       </div>
 
+      {showLocaleManager && (
+        <LocaleManager
+          locales={project.locales ?? []}
+          defaultLocale={project.defaultLocale}
+          onAddLocale={handleAddLocale}
+          onRemoveLocale={handleRemoveLocale}
+          onSetDefaultLocale={handleSetDefaultLocale}
+          onClose={() => setShowLocaleManager(false)}
+        />
+      )}
     </div>
   )
 }

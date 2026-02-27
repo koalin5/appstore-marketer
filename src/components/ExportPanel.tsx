@@ -3,15 +3,19 @@ import { useState } from 'react'
 interface ExportPanelProps {
   slideCount: number
   isExporting: boolean
+  localeCount: number
   onExportCurrent: () => void
   onExportAll: () => void
+  onExportAllLocales: () => void
 }
 
 export default function ExportPanel({
   slideCount,
   isExporting,
+  localeCount,
   onExportCurrent,
   onExportAll,
+  onExportAllLocales,
 }: ExportPanelProps) {
   const [showMenu, setShowMenu] = useState(false)
 
@@ -23,6 +27,11 @@ export default function ExportPanel({
   const handleExportAll = () => {
     setShowMenu(false)
     onExportAll()
+  }
+
+  const handleExportAllLocales = () => {
+    setShowMenu(false)
+    onExportAllLocales()
   }
 
   return (
@@ -45,7 +54,7 @@ export default function ExportPanel({
           />
 
           {/* Dropdown menu */}
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
             <button
               onClick={handleExportCurrent}
               className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors flex items-center gap-2"
@@ -60,6 +69,15 @@ export default function ExportPanel({
               <span>📦</span>
               Export All ({slideCount})
             </button>
+            {localeCount > 1 && (
+              <button
+                onClick={handleExportAllLocales}
+                className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 border-t border-gray-100"
+              >
+                <span>🌐</span>
+                Export All Locales ({localeCount})
+              </button>
+            )}
           </div>
         </>
       )}
