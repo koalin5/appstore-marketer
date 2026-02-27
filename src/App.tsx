@@ -4,7 +4,6 @@ import Editor from './components/Editor'
 import ProjectSidebar from './components/ProjectSidebar'
 import {
   getProjects,
-  getProject,
   saveProject,
   deleteProject,
   createNewProject,
@@ -56,11 +55,13 @@ function App() {
   }, [])
 
   const handleRenameProject = useCallback(async (id: string, newName: string) => {
-    const project = await getProject(id)
-    if (!project) return
-    const updated = { ...project, name: newName, updatedAt: Date.now() }
-    await saveProject(updated)
-    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
+    setProjects((prev) => {
+      const project = prev.find((p) => p.id === id)
+      if (!project) return prev
+      const updated = { ...project, name: newName, updatedAt: Date.now() }
+      saveProject(updated)
+      return prev.map((p) => (p.id === id ? updated : p))
+    })
   }, [])
 
   const handleDeleteProject = useCallback(async (id: string) => {
@@ -78,11 +79,13 @@ function App() {
 
   const handleUpdateAppIcon = useCallback(async (id: string, file: File) => {
     await saveAppIcon(id, file)
-    const project = await getProject(id)
-    if (!project) return
-    const updated = { ...project, appIcon: id, updatedAt: Date.now() }
-    await saveProject(updated)
-    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
+    setProjects((prev) => {
+      const project = prev.find((p) => p.id === id)
+      if (!project) return prev
+      const updated = { ...project, appIcon: id, updatedAt: Date.now() }
+      saveProject(updated)
+      return prev.map((p) => (p.id === id ? updated : p))
+    })
   }, [])
 
   const handleProjectUpdated = useCallback((updatedProject: Project) => {
@@ -108,13 +111,18 @@ function App() {
         onDeleteProject={handleDeleteProject}
         onUpdateAppIcon={handleUpdateAppIcon}
       />
-      {currentProjectId && (
-        <Editor
-          key={currentProjectId}
-          projectId={currentProjectId}
-          onProjectUpdated={handleProjectUpdated}
-        />
-      )}
+      {currentProjectId && (() => {
+        const current = projects.find((p) => p.id === currentProjectId)
+        return (
+          <Editor
+            key={currentProjectId}
+            projectId={currentProjectId}
+            projectName={current?.name}
+            projectAppIcon={current?.appIcon}
+            onProjectUpdated={handleProjectUpdated}
+          />
+        )
+      })()}
     </div>
   )
 }

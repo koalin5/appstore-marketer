@@ -46,10 +46,12 @@ function normalizeIPhoneDeviceModel(model: DeviceConfig['model']): DeviceConfig[
 
 interface EditorProps {
   projectId: string
+  projectName?: string
+  projectAppIcon?: string
   onProjectUpdated?: (project: Project) => void
 }
 
-export default function Editor({ projectId, onProjectUpdated }: EditorProps) {
+export default function Editor({ projectId, projectName, projectAppIcon, onProjectUpdated }: EditorProps) {
   const [project, setProject] = useState<Project | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
@@ -71,6 +73,15 @@ export default function Editor({ projectId, onProjectUpdated }: EditorProps) {
     }
     loadProject()
   }, [projectId])
+
+  // Sync external metadata changes (rename, icon) from sidebar
+  useEffect(() => {
+    setProject((prev) => {
+      if (!prev) return prev
+      if (prev.name === projectName && prev.appIcon === projectAppIcon) return prev
+      return { ...prev, name: projectName ?? prev.name, appIcon: projectAppIcon }
+    })
+  }, [projectName, projectAppIcon])
 
   // Flush pending save on unmount (project switch)
   useEffect(() => {
